@@ -38,8 +38,15 @@ st.markdown(
 if "global_users" not in st.session_state:
   st.session_state.global_users = {"admin": "1234", "onur": "1234"}
 
+# Kalıcı Oturum Kontrolü (URL Parametreleri ile Sayfa Yenilemede Açık Kalma)
 if "current_user" not in st.session_state:
   st.session_state.current_user = None
+
+# Eğer session boşsa ama URL'de kayıtlı kullanıcı varsa otomatik oturum aç
+if st.session_state.current_user is None:
+  url_user = st.query_params.get("user")
+  if url_user and url_user in st.session_state.global_users:
+    st.session_state.current_user = url_user
 
 if "global_cariler" not in st.session_state:
   st.session_state.global_cariler = pd.DataFrame([
@@ -106,7 +113,6 @@ def auth_ekrani():
 
   with col2:
     with st.container(border=True):
-      # Radyo buton yerine sekmeler (tabs) kullanarak daha kullanıcı dostu bir alan oluşturuyoruz
       tab_giris, tab_sifre, tab_kayit = st.tabs(
           ["🔑 Oturum Aç", "🔄 Şifremi Unuttum", "➕ Yeni Hesap"]
       )
@@ -123,6 +129,7 @@ def auth_ekrani():
                 and st.session_state.global_users[k_adi] == sifre
             ):
               st.session_state.current_user = k_adi
+              st.query_params["user"] = k_adi  # Oturumu kalıcı hale getir
               st.success("Giriş başarılı!")
               st.rerun()
             else:
@@ -202,6 +209,8 @@ else:
 
   if st.sidebar.button("Çıkış Yap"):
     st.session_state.current_user = None
+    if "user" in st.query_params:
+      del st.query_params["user"]  # Çıkış yapıldığında kalıcı oturumu sil
     st.rerun()
 
   # =========================================================
