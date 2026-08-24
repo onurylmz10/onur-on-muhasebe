@@ -205,7 +205,6 @@ textarea {
    ===================================================== */
 
 @media (max-width: 768px) {
-    /* Bilgisayar sidebar'ını gizle ama mobil menünün görünmesine izin ver */
     section[data-testid="stSidebar"] {
         display: none !important;
     }
@@ -234,6 +233,7 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 if "users" not in st.session_state:
+    # Kullanıcı anahtarları güvenli eşleşme için tamamen küçük harfle tutulur
     st.session_state.users = {"onur": "1234", "admin": "123456"}
 
 if "personel_loglari" not in st.session_state:
@@ -306,15 +306,28 @@ if not st.session_state.authenticated:
             giris_btn = st.form_submit_button("Sisteme Giriş Yap")
 
             if giris_btn:
+                # Boşlukları temizle ve hem kullanıcı girişini hem de veritabanını küçük harfe duyarsız yap
                 k_adi_clean = k_adi.strip().lower()
+
+                # Dictionary anahtarlarını da küçük harfe duyarlı eşleşecek şekilde arayalım
+                user_found = False
+                gercek_kullanici_adi = ""
+                for u_key in st.session_state.users:
+                    if u_key.lower() == k_adi_clean:
+                        user_found = True
+                        gercek_kullanici_adi = u_key
+                        break
+
                 if (
-                    k_adi_clean in st.session_state.users
-                    and st.session_state.users[k_adi_clean] == k_sifre
+                    user_found
+                    and st.session_state.users[gercek_kullanici_adi] == k_sifre
                 ):
                     st.session_state.authenticated = True
-                    st.session_state.current_user = k_adi.strip().capitalize()
+                    st.session_state.current_user = (
+                        gercek_kullanici_adi.capitalize()
+                    )
 
-                    if k_adi_clean == "admin":
+                    if gercek_kullanici_adi.lower() == "admin":
                         st.session_state.is_admin = True
                     else:
                         st.session_state.is_admin = False
@@ -433,7 +446,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Mobil cihazlar için üst kısıma pratik bir menü seçici ekliyoruz (Telefonda sidebar kapalı olduğu için buradan seçilecek)
 st.markdown(
     '<div class="mobile-nav-box">📱 <b>Mobil Menü / Sayfa Değiştir</b></div>',
     unsafe_allow_html=True,
@@ -442,7 +454,6 @@ mobil_menu_secim = st.selectbox(
     "Gitmek İstediğiniz Sayfayı Seçin", menu_listesi, key="mobile_select"
 )
 
-# Eğer mobilden farklı bir menü seçildiyse onu aktif menü yap
 if mobil_menu_secim != menu_secim:
     menu_secim = mobil_menu_secim
 
@@ -496,7 +507,9 @@ if menu_secim == "🔒 Yönetici Paneli":
         for k, s in st.session_state.users.items():
             p_data.append({
                 "Kullanıcı Adı": k,
-                "Yetki": "Yönetici (Admin)" if k == "admin" else "Personel",
+                "Yetki": "Yönetici (Admin)"
+                if k.lower() == "admin"
+                else "Personel",
             })
         st.dataframe(pd.DataFrame(p_data), use_container_width=True, hide_index=True)
 
@@ -507,7 +520,7 @@ if menu_secim == "🔒 Yönetici Paneli":
         )
 
         silinebilir_kullanicilar = [
-            k for k in st.session_state.users.keys() if k != "admin"
+            k for k in st.session_state.users.keys() if k.lower() != "admin"
         ]
 
         if len(silinebilir_kullanicilar) > 0:
@@ -549,10 +562,12 @@ if menu_secim == "🔒 Yönetici Paneli":
                     st.warning(
                         "Lütfen kullanıcı adı ve şifre alanlarını boş bırakmayın."
                     )
-                elif p_clean in st.session_state.users:
+                elif any(k.lower() == p_clean for k in st.session_state.users):
                     st.error("❌ Bu kullanıcı adı zaten sistemde mevcut!")
                 else:
-                    st.session_state.users[p_clean] = yeni_p_sifre
+                    st.session_state.users[yeni_p_kullanici.strip()] = (
+                        yeni_p_sifre
+                    )
                     st.success(
                         f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
                     )
