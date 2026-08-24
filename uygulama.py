@@ -188,7 +188,7 @@ if not st.session_state.logged_in:
 
 
 # =========================================================
-# 4. SOL MENÜ (GÖRSELDEKİ TAM LİSTE)
+# 4. SOL MENÜ
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
 st.sidebar.caption("ERP & STOK YÖNETİMİ v3.4")
@@ -429,7 +429,7 @@ elif menu_secim == "Yeni Ürün Kartı Aç":
 
         if st.form_submit_button("Ürünü Kaydet"):
             if u_ad:
-                yeni_ sat = pd.DataFrame([{
+                yeni_sat = pd.DataFrame([{
                     "Ürün Adı": u_ad, "Barkod": u_barkod,
                     "Alış Fiyatı (TL)": u_alis, "Satış Fiyatı (TL)": u_satis,
                     "Bakiye": u_bakiye, "Kritik Sınır": u_kritik, "Birim": u_birim
