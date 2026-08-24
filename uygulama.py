@@ -446,52 +446,58 @@ if menu_secim == "🔒 Yönetici Paneli":
         st.stop()
 
     st.markdown(
-        '<div class="page-title">🔒 Yönetici Paneli & Personel Takibi</div>',
+        '<div class="page-title">🔒 Yönetici Paneli & Personel Yönetimi</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="page-subtitle">Personel hesaplarını yönetin ve sistem giriş/çıkış loglarını takip edin.</div>',
+        '<div class="page-subtitle">Personel hesaplarını kontrol edin, yeni personel ekleyin veya işten ayrılanların erişimini kaldırın.</div>',
         unsafe_allow_html=True,
     )
 
-    tab_loglar, tab_personel_ekle = st.tabs([
-        "🕒 Personel Giriş/Çıkış Logları",
+    tab_personel_liste, tab_personel_ekle, tab_loglar = st.tabs([
+        "👥 Personel Hesapları & Silme",
         "➕ Yeni Personel Tanımla",
+        "🕒 Giriş/Çıkış Logları",
     ])
 
-    with tab_loglar:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown(
-                f"""
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-title">Toplam Kayıtlı Personel</div>
-                <div class="stat-value">{len(st.session_state.users)}</div>
-                <div class="stat-change">Aktif hesap sayısı</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-        with c2:
-            st.markdown(
-                f"""
-            <div class="stat-card">
-                <div class="stat-icon">📋</div>
-                <div class="stat-title">Toplam Sistem Hareketi (Log)</div>
-                <div class="stat-value">{len(st.session_state.personel_loglari)}</div>
-                <div class="stat-change">Giriş/Çıkış kayıtları</div>
-            </div>
-            """,
-                unsafe_allow_html=True,
-            )
-
+    with tab_personel_liste:
         st.markdown(
-            '<div class="section-title">🕒 Personel Giriş - Çıkış Geçmişi</div>',
+            '<div class="section-title">Mevcut Personel Hesapları</div>',
             unsafe_allow_html=True,
         )
-        log_df = pd.DataFrame(st.session_state.personel_loglari)
-        st.dataframe(log_df, use_container_width=True, hide_index=True)
+        st.info(
+            "💡 İşten ayrılan personellerin sistem güvenliği için hesaplarını buradan silebilirsiniz."
+        )
+
+        # Tablo görünümü
+        p_data = []
+        for k, s in st.session_state.users.items():
+            p_data.append({
+                "Kullanıcı Adı": k,
+                "Yetki": "Yönetici (Admin)" if k == "admin" else "Personel",
+            })
+        st.dataframe(pd.DataFrame(p_data), use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.markdown(
+            "#### 🗑️ Personel Hesabı Sil (İşten Ayrılma Durumu)",
+            unsafe_allow_html=True,
+        )
+
+        silinecek_kullanici = st.selectbox(
+            "Silinecek Personeli Seçin",
+            [k for k in st.session_state.users.keys() if k != "admin"],
+        )
+
+        if st.button("⚠️ Seçilen Personel Hesabını Kalıcı Olarak Sil"):
+            if silinecek_kullanici in st.session_state.users:
+                del st.session_state.users[silinecek_kullanici]
+                st.success(
+                    f"✅ **{silinecek_kullanici}** adlı personel hesabı sistemden başarıyla silindi. Artık giriş yapamayacak."
+                )
+                st.rerun()
+            else:
+                st.error("❌ Personel bulunamadı.")
 
     with tab_personel_ekle:
         st.markdown(
@@ -520,8 +526,16 @@ if menu_secim == "🔒 Yönetici Paneli":
                 else:
                     st.session_state.users[p_clean] = yeni_p_sifre
                     st.success(
-                        f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu! Artık bu bilgilerle sisteme giriş yapabilir."
+                        f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
                     )
+
+    with tab_loglar:
+        st.markdown(
+            '<div class="section-title">🕒 Personel Giriş - Çıkış Geçmişi</div>',
+            unsafe_allow_html=True,
+        )
+        log_df = pd.DataFrame(st.session_state.personel_loglari)
+        st.dataframe(log_df, use_container_width=True, hide_index=True)
 
 
 # =========================================================
@@ -928,7 +942,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.5.0
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.5.1
 </div>
 """,
     unsafe_allow_html=True,
