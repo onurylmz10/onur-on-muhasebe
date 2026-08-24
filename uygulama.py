@@ -412,7 +412,7 @@ with st.sidebar:
         f"""
     <div class="sidebar-logo">
         <div class="brand">🪑 HAYAL MOBİLYA</div>
-        <div class="sub">ERP & STOK YÖNETİMİ v3.0</div>
+        <div class="sub">ERP & STOK YÖNETİMİ v3.1</div>
     </div>
     """,
         unsafe_allow_html=True,
@@ -655,7 +655,7 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
                 st.session_state.stok.loc[idx, "Bakiye"] = mevcut - adet
                 islem_tip_str = "İmalat/Fire Çıkışı (-)"
 
-            # Stok hareketini logla
+            # Stok hareketini anında logla
             st.session_state.stok_hareketleri.insert(
                 0,
                 {
@@ -762,7 +762,6 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                     "Toplam": toplam_tutar,
                 })
 
-                # Stok hareketlerine de ekleyelim
                 st.session_state.stok_hareketleri.insert(
                     0,
                     {
@@ -1100,7 +1099,7 @@ elif menu_secim == "🔑 Şifre Değiştir":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.0 • Tüm Hakları Saklıdır.
+    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.1 • Tüm Hakları Saklıdır.
 </div>
 """,
     unsafe_allow_html=True,
