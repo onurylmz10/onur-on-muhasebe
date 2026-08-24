@@ -1,4 +1,6 @@
 import random
+import sqlite3
+import json
 from datetime import datetime
 import pandas as pd
 import streamlit as st
@@ -43,104 +45,193 @@ st.markdown(
 )
 
 # =========================================================
-# 2. ORTAK GLOBAL VERİTABANI BAŞLATMA (SESSION STATE)
 # =========================================================
-if "global_users" not in st.session_state:
-    st.session_state.global_users = {
-        "admin": "1234",
-        "onur": "2026",
-        "personel": "0000",
+# 2. ORTAK VE KALICI VERİTABANI (SQLite)
+# =========================================================
+# ÖNEMLİ:
+# st.session_state kullanıcıya özeldir. Bu nedenle admin ve personelin
+# aynı stokları görebilmesi için ortak veriler SQLite veritabanında tutulur.
+DB_PATH = "hayal_mobilya.db"
+
+def _db():
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS app_data (
+            data_key TEXT PRIMARY KEY,
+            data_value TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    return conn
+
+def _db_get(key, default):
+    conn = _db()
+    row = conn.execute("SELECT data_value FROM app_data WHERE data_key = ?", (key,)).fetchone()
+    conn.close()
+    if row is None:
+        _db_set(key, default)
+        return default
+    try:
+        return json.loads(row[0])
+    except Exception:
+        _db_set(key, default)
+        return default
+
+def _db_set(key, value):
+    conn = _db()
+    conn.execute(
+        "INSERT OR REPLACE INTO app_data(data_key, data_value) VALUES (?, ?)",
+        (key, json.dumps(value, ensure_ascii=False, default=str))
+    )
+    conn.commit()
+    conn.close()
+
+def _df_to_records(df):
+    return df.to_dict(orient="records")
+
+def _records_to_df(records, columns):
+    df = pd.DataFrame(records)
+    for col in columns:
+        if col not in df.columns:
+            df[col] = []
+    return df[columns]
+
+STOK_COLUMNS = [
+    "Ürün Adı", "Barkod", "Alış Fiyatı (TL)", "Satış Fiyatı (TL)",
+    "Bakiye", "Kritik Sınır", "Birim"
+]
+CARI_COLUMNS = ["Cari Adı", "Telefon", "Tür", "Bakiye (TL)"]
+BANKA_COLUMNS = ["Banka Adı", "Şube / Kod", "Hesap Adı", "IBAN", "Döviz"]
+
+DEFAULT_USERS = {
+    "admin": "1234",
+    "onur": "2026",
+    "personel": "0000"
+}
+
+DEFAULT_STOK = [
+    {
+        "Ürün Adı": "Viyana Köşe Koltuk Takımı",
+        "Barkod": "8690011223344",
+        "Alış Fiyatı (TL)": 12000.0,
+        "Satış Fiyatı (TL)": 18500.0,
+        "Bakiye": 8,
+        "Kritik Sınır": 3,
+        "Birim": "Takım"
+    },
+    {
+        "Ürün Adı": "Milano Yemek Masası (6 Kişilik)",
+        "Barkod": "8690055667788",
+        "Alış Fiyatı (TL)": 6500.0,
+        "Satış Fiyatı (TL)": 9900.0,
+        "Bakiye": 4,
+        "Kritik Sınır": 2,
+        "Birim": "Adet"
+    },
+    {
+        "Ürün Adı": "Liva Zigon Sehpa Seti",
+        "Barkod": "8690099887766",
+        "Alış Fiyatı (TL)": 1500.0,
+        "Satış Fiyatı (TL)": 2750.0,
+        "Bakiye": 12,
+        "Kritik Sınır": 5,
+        "Birim": "Set"
     }
+]
 
-if "global_stok" not in st.session_state:
-    st.session_state.global_stok = pd.DataFrame(
-        [
-            {
-                "Ürün Adı": "Viyana Köşe Koltuk Takımı",
-                "Barkod": "8690011223344",
-                "Alış Fiyatı (TL)": 12000.0,
-                "Satış Fiyatı (TL)": 18500.0,
-                "Bakiye": 8,
-                "Kritik Sınır": 3,
-                "Birim": "Takım",
-            },
-            {
-                "Ürün Adı": "Milano Yemek Masası (6 Kişilik)",
-                "Barkod": "8690055667788",
-                "Alış Fiyatı (TL)": 6500.0,
-                "Satış Fiyatı (TL)": 9900.0,
-                "Bakiye": 4,
-                "Kritik Sınır": 2,
-                "Birim": "Adet",
-            },
-            {
-                "Ürün Adı": "Liva Zigon Sehpa Seti",
-                "Barkod": "8690099887766",
-                "Alış Fiyatı (TL)": 1500.0,
-                "Satış Fiyatı (TL)": 2750.0,
-                "Bakiye": 12,
-                "Kritik Sınır": 5,
-                "Birim": "Set",
-            },
-        ]
+DEFAULT_CARILER = [
+    {
+        "Cari Adı": "Ahmet Mobilya Ltd. Şti.",
+        "Telefon": "0532 555 4433",
+        "Tür": "Müşteri",
+        "Bakiye (TL)": 14500.0
+    },
+    {
+        "Cari Adı": "Balıkesir Ahşap Palet San.",
+        "Telefon": "0266 222 1122",
+        "Tür": "Tedarikçi",
+        "Bakiye (TL)": -8200.0
+    }
+]
+
+DEFAULT_BANKA = [
+    {
+        "Banka Adı": "Ziraat Bankası",
+        "Şube / Kod": "Edremit Şubesi / 1234",
+        "Hesap Adı": "Ticari Vadesiz TL",
+        "IBAN": "TR33 0001 0012 3456 7890 1234 56",
+        "Döviz": "TL"
+    }
+]
+
+DEFAULT_FATURALAR = [
+    {
+        "Tarih": "2026-08-24 14:10",
+        "Müşteri": "Ahmet Mobilya Ltd. Şti.",
+        "Ürün": "Viyana Köşe Koltuk Takımı",
+        "Adet": 2,
+        "Toplam": 44400.0,
+        "Kesen": "admin"
+    }
+]
+
+DEFAULT_IRSALIYELER = []
+DEFAULT_LOGLAR = [
+    {
+        "Zaman": "2026-08-24 11:30:15",
+        "Personel": "onur",
+        "Ürün": "Liva Zigon Sehpa Seti",
+        "İşlem": "Üretimden Ekle (+)",
+        "Miktar": 5
+    }
+]
+
+# Veritabanı ilk kez açılıyorsa başlangıç verilerini oluştur.
+_db()
+
+if _db_get("global_users", None) is None:
+    _db_set("global_users", DEFAULT_USERS)
+if _db_get("global_stok", None) is None:
+    _db_set("global_stok", DEFAULT_STOK)
+if _db_get("global_cariler", None) is None:
+    _db_set("global_cariler", DEFAULT_CARILER)
+if _db_get("global_banka_hesaplari", None) is None:
+    _db_set("global_banka_hesaplari", DEFAULT_BANKA)
+if _db_get("global_faturalar", None) is None:
+    _db_set("global_faturalar", DEFAULT_FATURALAR)
+if _db_get("global_irsaliyeler", None) is None:
+    _db_set("global_irsaliyeler", DEFAULT_IRSALIYELER)
+if _db_get("global_personel_loglari", None) is None:
+    _db_set("global_personel_loglari", DEFAULT_LOGLAR)
+
+def refresh_shared_data():
+    """Her Streamlit çalışmasında ortak verileri DB'den yeniden oku."""
+    st.session_state.global_users = _db_get("global_users", DEFAULT_USERS)
+    st.session_state.global_stok = _records_to_df(
+        _db_get("global_stok", DEFAULT_STOK), STOK_COLUMNS
     )
-
-if "global_cariler" not in st.session_state:
-    st.session_state.global_cariler = pd.DataFrame(
-        [
-            {
-                "Cari Adı": "Ahmet Mobilya Ltd. Şti.",
-                "Telefon": "0532 555 4433",
-                "Tür": "Müşteri",
-                "Bakiye (TL)": 14500.0,
-            },
-            {
-                "Cari Adı": "Balıkesir Ahşap Palet San.",
-                "Telefon": "0266 222 1122",
-                "Tür": "Tedarikçi",
-                "Bakiye (TL)": -8200.0,
-            },
-        ]
+    st.session_state.global_cariler = _records_to_df(
+        _db_get("global_cariler", DEFAULT_CARILER), CARI_COLUMNS
     )
-
-if "global_banka_hesaplari" not in st.session_state:
-    st.session_state.global_banka_hesaplari = pd.DataFrame(
-        [
-            {
-                "Banka Adı": "Ziraat Bankası",
-                "Şube / Kod": "Edremit Şubesi / 1234",
-                "Hesap Adı": "Ticari Vadesiz TL",
-                "IBAN": "TR33 0001 0012 3456 7890 1234 56",
-                "Döviz": "TL",
-            },
-        ]
+    st.session_state.global_banka_hesaplari = _records_to_df(
+        _db_get("global_banka_hesaplari", DEFAULT_BANKA), BANKA_COLUMNS
     )
+    st.session_state.global_faturalar = _db_get("global_faturalar", DEFAULT_FATURALAR)
+    st.session_state.global_irsaliyeler = _db_get("global_irsaliyeler", DEFAULT_IRSALIYELER)
+    st.session_state.global_personel_loglari = _db_get("global_personel_loglari", DEFAULT_LOGLAR)
 
-if "global_faturalar" not in st.session_state:
-    st.session_state.global_faturalar = [
-        {
-            "Tarih": "2026-08-24 14:10",
-            "Müşteri": "Ahmet Mobilya Ltd. Şti.",
-            "Ürün": "Viyana Köşe Koltuk Takımı",
-            "Adet": 2,
-            "Toplam": 44400.0,
-            "Kesen": "admin",
-        }
-    ]
+def save_shared_data():
+    """Session'daki ortak verileri kalıcı DB'ye yaz."""
+    _db_set("global_users", st.session_state.global_users)
+    _db_set("global_stok", _df_to_records(st.session_state.global_stok))
+    _db_set("global_cariler", _df_to_records(st.session_state.global_cariler))
+    _db_set("global_banka_hesaplari", _df_to_records(st.session_state.global_banka_hesaplari))
+    _db_set("global_faturalar", st.session_state.global_faturalar)
+    _db_set("global_irsaliyeler", st.session_state.global_irsaliyeler)
+    _db_set("global_personel_loglari", st.session_state.global_personel_loglari)
 
-if "global_irsaliyeler" not in st.session_state:
-    st.session_state.global_irsaliyeler = []
-
-if "global_personel_loglari" not in st.session_state:
-    st.session_state.global_personel_loglari = [
-        {
-            "Zaman": "2026-08-24 11:30:15",
-            "Personel": "onur",
-            "Ürün": "Liva Zigon Sehpa Seti",
-            "İşlem": "Üretimden Ekle (+)",
-            "Miktar": 5,
-        }
-    ]
+# Her rerun'da başka kullanıcıların yaptığı değişiklikleri de gör.
+refresh_shared_data()
 
 # Oturum Değişkenleri
 if "logged_in" not in st.session_state:
@@ -195,12 +286,14 @@ if not st.session_state.logged_in:
                         if beni_hatirla:
                             st.query_params["user"] = kullanici_adi
                         st.success("✅ Giriş başarılı!")
+                        save_shared_data()
                         st.rerun()
                     else:
                         st.error("❌ Hatalı kullanıcı adı veya şifre!")
 
             if st.button("🔑 Şifremi Unuttum?", use_container_width=True):
                 st.session_state.sifremi_unuttum_mod = True
+                save_shared_data()
                 st.rerun()
         else:
             st.markdown("#### 🔄 Şifre Sıfırlama")
@@ -217,6 +310,7 @@ if not st.session_state.logged_in:
                             st.session_state.global_users[unutulan_user] = yeni_sifre
                             st.success("✅ Şifre güncellendi!")
                             st.session_state.sifremi_unuttum_mod = False
+                            save_shared_data()
                             st.rerun()
                         else:
                             st.error("❌ Yönetici şifresi hatalı!")
@@ -224,6 +318,7 @@ if not st.session_state.logged_in:
                         st.error("❌ Kullanıcı bulunamadı!")
                 if geri_btn:
                     st.session_state.sifremi_unuttum_mod = False
+                    save_shared_data()
                     st.rerun()
     st.stop()
 
@@ -267,6 +362,7 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.user_role = ""
     if "user" in st.query_params:
         del st.query_params["user"]
+    save_shared_data()
     st.rerun()
 
 
@@ -344,6 +440,7 @@ elif menu_secim == "➕ Manuel Stok Ekle":
                     "Miktar": m_adet
                 })
                 st.success(f"✅ İŞLEM BAŞARILI: {m_urun} için {m_adet} adet eklendi ve ortak havuz güncellendi!")
+                save_shared_data()
                 st.rerun()
 
 
@@ -388,6 +485,7 @@ elif menu_secim == "📄 PDF / E-Fatura İçe Aktar":
                 })
 
             st.success("✅ Fatura başarıyla ortak depoya işlendi!")
+            save_shared_data()
             st.rerun()
 
 
@@ -420,6 +518,7 @@ elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
                 "İşlem": islem,
                 "Miktar": adet
             })
+            save_shared_data()
             st.rerun()
 
 
@@ -469,6 +568,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                     "Miktar": mik
                 })
                 st.success("✅ Fatura kesildi ve ortak stoktan düşüldü.")
+                save_shared_data()
                 st.rerun()
             else:
                 st.error("❌ Yetersiz bakiye!")
@@ -484,6 +584,7 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
             if tedarikci and evrak_no:
                 st.session_state.global_irsaliyeler.append({"Tarih": datetime.now().strftime("%Y-%m-%d"), "Tedarikçi": tedarikci, "Evrak No": evrak_no, "Açıklama": aciklama})
                 st.success("✅ İrsaliye kaydedildi.")
+                save_shared_data()
                 st.rerun()
 
 
@@ -503,6 +604,7 @@ elif menu_secim == "🤝 Cari Hesaplar & Borçlar":
                     yeni_c = pd.DataFrame([{"Cari Adı": c_ad, "Telefon": c_tel, "Tür": c_turu, "Bakiye (TL)": c_bak}])
                     st.session_state.global_cariler = pd.concat([st.session_state.global_cariler, yeni_c], ignore_index=True)
                     st.success("✅ Cari eklendi.")
+                    save_shared_data()
                     st.rerun()
 
 
@@ -544,6 +646,7 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                     "Miktar": u_bakiye
                 })
                 st.success(f"✅ {u_ad} ortak kataloğa eklendi!")
+                save_shared_data()
                 st.rerun()
 
 
@@ -573,6 +676,7 @@ elif menu_secim == "🔒 Şifre Değiştir":
             if st.session_state.global_users.get(ak_user) == eskisifre:
                 st.session_state.global_users[ak_user] = yenisifre
                 st.success("✅ Şifreniz güncellendi.")
+                save_shared_data()
                 st.rerun()
             else:
                 st.error("❌ Mevcut şifre hatalı!")
