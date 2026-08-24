@@ -7,7 +7,7 @@ st.set_page_config(
     page_title="Hayal Mobilya Kurumsal ERP", page_icon="🛋️", layout="wide"
 )
 
-# Özel CSS Stilleri
+# Özel CSS Stilleri (Görseldeki modern ve şık ERP görünümü için)
 st.markdown(
     """
     <style>
@@ -28,6 +28,10 @@ st.markdown(
         color: #95A5A6;
         margin-top: 50px;
         padding: 10px;
+    }
+    /* Kenar çubuğu radio butonlarını şıklaştır */
+    [data-testid="stSidebar"] .stRadio > div {
+        gap: 5px;
     }
     </style>
     """,
@@ -188,13 +192,15 @@ def auth_ekrani():
 if st.session_state.current_user is None:
   auth_ekrani()
 else:
-  # Kenar Çubuğu Menüsü (Daha kullanışlı Radio buton tasarımı)
-  st.sidebar.title("🛋️ Hayal Mobilya ERP")
-  st.sidebar.markdown(f"👤 Aktif Kullanıcı: **{st.session_state.current_user}**")
+  # Kenar Çubuğu (Görseldeki gibi sade ve işlevsel tasarım)
+  st.sidebar.markdown(
+      "### 🛋️ Hayal Mobilya ERP", unsafe_allow_html=True
+  )
+  st.sidebar.markdown(f"Kullanıcı: **{st.session_state.current_user}**")
   st.sidebar.markdown("---")
 
   menu_secim = st.sidebar.radio(
-      "Navigasyon Menüsü",
+      "Menü",
       [
           "🏠 Ana Sayfa",
           "📦 Stok Yönetimi",
@@ -206,10 +212,11 @@ else:
           "📊 Raporlar & Analiz",
           "🔑 Şifre Değiştir",
       ],
+      label_visibility="collapsed",
   )
 
   st.sidebar.markdown("---")
-  if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
+  if st.sidebar.button("Çıkış Yap", use_container_width=True):
     st.session_state.current_user = None
     if "user" in st.query_params:
       del st.query_params["user"]  # Çıkış yapıldığında kalıcı oturumu sil
