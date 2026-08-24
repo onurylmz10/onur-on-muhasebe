@@ -591,48 +591,104 @@ elif menu_secim == "➕ Manuel Stok Ekle":
 
 
 elif menu_secim == "📄 PDF / E-Fatura İçe Aktar":
-    st.markdown('<div class="page-title">PDF / E-Fatura İçe Aktar</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Fatura yükleyerek ortak depoya artı stok işleyin.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-title">PDF / E-Fatura → Malzeme Stoğu</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Faturadan gelen ürünler Ürün Stoğuna değil, doğrudan Malzeme Stoğuna eklenir ve mevcut miktar güncellenir.</div>',
+        unsafe_allow_html=True
+    )
 
-    uploaded_file = st.file_uploader("Fatura Dosyası Yükle", type=["pdf", "xml", "txt"])
+    uploaded_file = st.file_uploader(
+        "Fatura Dosyası Yükle",
+        type=["pdf", "xml", "txt"],
+        key="malzeme_fatura_uploader"
+    )
+
     if uploaded_file is not None:
+        # Mevcut sistemdeki fatura okuma/simülasyon yapısı korunuyor.
+        # Gerçek PDF/XML okuyucu eklendiğinde burada oluşturulan tablo kullanılabilir.
         simule_fatura_kalemleri = pd.DataFrame([
-            {"Ürün Adı": "Viyana Köşe Koltuk Takımı", "Gelen Miktar": 4, "Birim Fiyat": 12000.0},
-            {"Ürün Adı": "Liva Zigon Sehpa Seti", "Gelen Miktar": 10, "Birim Fiyat": 1500.0}
+            {"Malzeme Adı": "Viyana Köşe Koltuk Kumaşı", "Gelen Miktar": 4, "Birim": "Adet", "Birim Fiyat": 12000.0},
+            {"Malzeme Adı": "Liva Zigon Sehpa Hammadde", "Gelen Miktar": 10, "Birim": "Adet", "Birim Fiyat": 1500.0}
         ])
+
+        st.markdown("#### 📄 Fatura Kalemleri")
         st.dataframe(simule_fatura_kalemleri, use_container_width=True, hide_index=True)
 
-        if st.button("📥 Ürünleri Ortak Depoya İşle", use_container_width=True):
-            for index, row in simule_fatura_kalemleri.iterrows():
-                u_adi = row["Ürün Adı"]
-                gelen_mik = int(row["Gelen Miktar"])
-                
-                if u_adi in st.session_state.global_stok["Ürün Adı"].values:
-                    idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == u_adi].index[0]
-                    st.session_state.global_stok.loc[idx, "Bakiye"] += gelen_mik
-                else:
-                    yeni_sat = pd.DataFrame([{
-                        "Ürün Adı": u_adi, 
-                        "Barkod": str(random.randint(8690000000000, 8699999999999)),
-                        "Alış Fiyatı (TL)": row["Birim Fiyat"], 
-                        "Satış Fiyatı (TL)": row["Birim Fiyat"] * 1.5,
-                        "Bakiye": gelen_mik, 
-                        "Kritik Sınır": 3, 
-                        "Birim": "Adet"
-                    }])
-                    st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_sat], ignore_index=True)
+        st.info(
+            "ℹ️ Bu faturadaki kalemler Ürün Stoğuna aktarılmaz. "
+            "Mevcut Malzeme Stoğunda varsa miktarı artırılır; yoksa yeni malzeme kartı oluşturulur."
+        )
 
-                st.session_state.global_personel_loglari.insert(0, {
-                    "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Personel": st.session_state.current_user,
-                    "Ürün": u_adi,
-                    "İşlem": f"PDF Fatura İçe Aktarım (+)",
-                    "Miktar": gelen_mik
-                })
+        if st.button("📥 Faturayı Malzeme Stoğuna İşle", use_container_width=True):
+            conn = _db()
+            try:
+                for _, row in simule_fatura_kalemleri.iterrows():
+                    malzeme_adi = str(row["Malzeme Adı"]).strip()
+                    gelen_miktar = float(row["Gelen Miktar"])
+                    birim = str(row.get("Birim", "Adet"))
+                    birim_fiyat = float(row.get("Birim Fiyat", 0))
 
-            st.success("✅ Fatura başarıyla ortak depoya işlendi!")
-            save_shared_data()
-            st.rerun()
+                    mevcut = conn.execute(
+                        "SELECT id, miktar FROM malzemeler WHERE malzeme_adi = ?",
+                        (malzeme_adi,)
+                    ).fetchone()
+
+                    if mevcut:
+                        yeni_miktar = float(mevcut[1]) + gelen_miktar
+
+                        conn.execute(
+                            """
+                            UPDATE malzemeler
+                            SET miktar = ?,
+                                alis_fiyati = ?,
+                                birim = ?
+                            WHERE id = ?
+                            """,
+                            (yeni_miktar, birim_fiyat, birim, mevcut[0])
+                        )
+
+                        islem_metni = "PDF / E-Fatura Malzeme Stoğu Güncelleme (+)"
+                    else:
+                        conn.execute(
+                            """
+                            INSERT INTO malzemeler
+                            (malzeme_adi, birim, miktar, kritik_sinir, alis_fiyati, renk, tedarikci)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                malzeme_adi,
+                                birim,
+                                gelen_miktar,
+                                3,
+                                birim_fiyat,
+                                "",
+                                ""
+                            )
+                        )
+
+                        islem_metni = "PDF / E-Fatura Yeni Malzeme (+)"
+
+                    st.session_state.global_personel_loglari.insert(0, {
+                        "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Personel": st.session_state.current_user,
+                        "Ürün": malzeme_adi,
+                        "İşlem": islem_metni,
+                        "Miktar": gelen_miktar
+                    })
+
+                conn.commit()
+                save_shared_data()
+
+                st.success(
+                    "✅ Fatura başarıyla işlendi! Gelen tüm kalemler Malzeme Stoğuna eklendi/güncellendi."
+                )
+                st.rerun()
+
+            except Exception as e:
+                conn.rollback()
+                st.error(f"❌ Fatura malzeme stoğuna işlenirken hata oluştu: {e}")
+            finally:
+                conn.close()
 
 
 elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
