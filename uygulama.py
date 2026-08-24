@@ -59,19 +59,6 @@ section[data-testid="stSidebar"] > div {
     margin-top: 3px;
 }
 
-/* Radio */
-div[data-testid="stRadio"] label {
-    background: transparent;
-    border-radius: 10px;
-    padding: 8px 10px;
-    margin: 2px 0;
-    transition: 0.2s;
-}
-
-div[data-testid="stRadio"] label:hover {
-    background: #171d26;
-}
-
 /* Header */
 .topbar {
     background: #0d1117;
@@ -200,10 +187,6 @@ textarea {
     margin-bottom: 20px;
 }
 
-/* =====================================================
-   MOBİL ÖZEL AYARLAR
-   ===================================================== */
-
 @media (max-width: 768px) {
     section[data-testid="stSidebar"] {
         display: none !important;
@@ -233,8 +216,11 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 if "users" not in st.session_state:
-    # Kullanıcı anahtarları güvenli eşleşme için tamamen küçük harfle tutulur
-    st.session_state.users = {"onur": "1234", "admin": "123456"}
+    st.session_state.users = {
+        "Onur": "1234",
+        "Admin": "123456",
+        "Agam": "1234",
+    }
 
 if "personel_loglari" not in st.session_state:
     st.session_state.personel_loglari = [
@@ -283,7 +269,7 @@ if "faturalar" not in st.session_state:
 
 
 # =========================================================
-# GİRİŞ EKRANI
+# GİRİŞ EKRANI (SELECTBOX İLE KARIŞIKLIĞA SON)
 # =========================================================
 
 if not st.session_state.authenticated:
@@ -301,33 +287,23 @@ if not st.session_state.authenticated:
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.form("login_form"):
-            k_adi = st.text_input("Kullanıcı Adı")
+            # Kullanıcı adını serbest metin yerine listeden seçtirerek tarayıcı hatasını tamamen önlüyoruz
+            kullanici_listesi = list(st.session_state.users.keys())
+            secilen_kullanici = st.selectbox(
+                "Kullanıcı Seçin", kullanıcı_listesi
+            )
             k_sifre = st.text_input("Şifre", type="password")
             giris_btn = st.form_submit_button("Sisteme Giriş Yap")
 
             if giris_btn:
-                # Boşlukları temizle ve hem kullanıcı girişini hem de veritabanını küçük harfe duyarsız yap
-                k_adi_clean = k_adi.strip().lower()
-
-                # Dictionary anahtarlarını da küçük harfe duyarlı eşleşecek şekilde arayalım
-                user_found = False
-                gercek_kullanici_adi = ""
-                for u_key in st.session_state.users:
-                    if u_key.lower() == k_adi_clean:
-                        user_found = True
-                        gercek_kullanici_adi = u_key
-                        break
-
                 if (
-                    user_found
-                    and st.session_state.users[gercek_kullanici_adi] == k_sifre
+                    secilen_kullanici in st.session_state.users
+                    and st.session_state.users[secilen_kullanici] == k_sifre
                 ):
                     st.session_state.authenticated = True
-                    st.session_state.current_user = (
-                        gercek_kullanici_adi.capitalize()
-                    )
+                    st.session_state.current_user = secilen_kullanici
 
-                    if gercek_kullanici_adi.lower() == "admin":
+                    if secilen_kullanici.lower() == "admin":
                         st.session_state.is_admin = True
                     else:
                         st.session_state.is_admin = False
@@ -345,9 +321,7 @@ if not st.session_state.authenticated:
                     st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
                     st.rerun()
                 else:
-                    st.error(
-                        "❌ Hatalı kullanıcı adı veya şifre! Lütfen yöneticinizden bilgi alınız."
-                    )
+                    st.error("❌ Hatalı şifre! Lütfen şifrenizi kontrol edin.")
 
     st.stop()
 
@@ -557,19 +531,20 @@ if menu_secim == "🔒 Yönetici Paneli":
             )
 
             if personel_kayit_btn:
-                p_clean = yeni_p_kullanici.strip().lower()
+                p_clean = yeni_p_kullanici.strip()
                 if not p_clean or not yeni_p_sifre:
                     st.warning(
                         "Lütfen kullanıcı adı ve şifre alanlarını boş bırakmayın."
                     )
-                elif any(k.lower() == p_clean for k in st.session_state.users):
+                elif any(
+                    k.lower() == p_clean.lower()
+                    for k in st.session_state.users
+                ):
                     st.error("❌ Bu kullanıcı adı zaten sistemde mevcut!")
                 else:
-                    st.session_state.users[yeni_p_kullanici.strip()] = (
-                        yeni_p_sifre
-                    )
+                    st.session_state.users[p_clean] = yeni_p_sifre
                     st.success(
-                        f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
+                        f"🎉 **{p_clean}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
                     )
                     st.rerun()
 
