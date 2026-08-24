@@ -211,8 +211,36 @@ textarea {
 
 
 # =========================================================
-# VERİTABANI - DEMO (MOBİLYA ÜRÜNLERİ)
+# OTURUM VE VERİ YÖNETİMİ (SESSION STATE)
 # =========================================================
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if "current_user" not in st.session_state:
+    st.session_state.current_user = ""
+
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
+
+if "users" not in st.session_state:
+    # Kullanıcılar ve şifreleri
+    st.session_state.users = {"onur": "1234", "admin": "123456"}
+
+if "personel_loglari" not in st.session_state:
+    # Personel giriş-çıkış takip veritabanı (Simülasyon/Kayıt)
+    st.session_state.personel_loglari = [
+        {
+            "Kullanıcı": "Admin",
+            "İşlem": "Giriş Yapıldı",
+            "Zaman": "2026-08-24 08:30:12",
+        },
+        {
+            "Kullanıcı": "Onur",
+            "İşlem": "Giriş Yapıldı",
+            "Zaman": "2026-08-24 09:15:40",
+        },
+    ]
 
 if "stok" not in st.session_state:
     st.session_state.stok = pd.DataFrame([
@@ -247,12 +275,127 @@ if "faturalar" not in st.session_state:
 
 
 # =========================================================
-# SIDEBAR
+# GİRİŞ / ÜYE OL EKRANI (EĞER GİRİŞ YAPILMADIYSA)
 # =========================================================
 
-with st.sidebar:
+if not st.session_state.authenticated:
     st.markdown(
         """
+        <div style="max-width: 450px; margin: 40px auto; text-align: center;">
+            <h1 style="color: white; font-size: 28px; font-weight: 800;">🪑 HAYAL MOBİLYA</h1>
+            <p style="color: #7e899a; font-size: 13px;">Ön Muhasebe & Stok Takip Sistemi</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Üye Ol"])
+
+        with tab_giris:
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.form("login_form"):
+                k_adi = st.text_input("Kullanıcı Adı")
+                k_sifre = st.text_input("Şifre", type="password")
+                giris_btn = st.form_submit_button("Sisteme Giriş Yap")
+
+                if giris_btn:
+                    k_adi_clean = k_adi.strip().lower()
+                    if (
+                        k_adi_clean in st.session_state.users
+                        and st.session_state.users[k_adi_clean] == k_sifre
+                    ):
+                        st.session_state.authenticated = True
+                        st.session_state.current_user = (
+                            k_adi.strip().capitalize()
+                        )
+
+                        # Admin kontrolü
+                        if k_adi_clean == "admin":
+                            st.session_state.is_admin = True
+                        else:
+                            st.session_state.is_admin = False
+
+                        # Giriş logunu kaydet
+                        zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        st.session_state.personel_loglari.insert(
+                            0,
+                            {
+                                "Kullanıcı": st.session_state.current_user,
+                                "İşlem": "Giriş Yapıldı",
+                                "Zaman": zaman_str,
+                            },
+                        )
+
+                        st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
+                        st.rerun()
+                    else:
+                        st.error(
+                            "❌ Hatalı kullanıcı adı veya şifre! Lütfen kontrol edin."
+                        )
+
+        with tab_kayit:
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.form("register_form"):
+                y_adi = st.text_input("Yeni Kullanıcı Adı (Personel)")
+                y_sifre = st.text_input("Şifre Belirleyin", type="password")
+                y_sifre_tekrar = st.text_input(
+                    "Şifre Tekrar", type="password"
+                )
+                kayit_btn = st.form_submit_button("Hesap Oluştur / Üye Ol")
+
+                if kayit_btn:
+                    y_adi_clean = y_adi.strip().lower()
+                    if not y_adi_clean or not y_sifre:
+                        st.warning(
+                            "Lütfen kullanıcı adı ve şifre alanlarını doldurun."
+                        )
+                    elif y_sifre != y_s_ifre_tekrar if 'y_s_ifre_tekrar' in locals() else y_sifre != y_sifre_tekrar:
+                        st.error("❌ Girdiğiniz şifreler birbiriyle eşleşmiyor!")
+                    elif y_adi_clean in st.session_state.users:
+                        st.error(
+                            "❌ Bu kullanıcı adı zaten sistemde kayıtlı!"
+                        )
+                    else:
+                        st.session_state.users[y_adi_clean] = y_sifre
+                        st.success(
+                            "🎉 Üyelik başarıyla oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz."
+                        )
+
+    st.stop()  # Giriş yapılmadıysa uygulamanın geri kalanını çalıştırma
+
+
+# =========================================================
+# ANA UYGULAMA (GİRİŞ YAPILDIKTAN SONRA)
+# =========================================================
+
+# Personelin görebileceği menü listesini dinamik oluşturalım (Admin özel sekme içerir)
+menu_listesi = [
+    "🏠 Dashboard",
+    "📦 Ürünler",
+    "🧾 Satış Faturası Kes",
+    "📄 Fatura ile Stok İşle",
+    "📥 Stok Giriş",
+    "📤 Stok Çıkış",
+    "👥 Cari Hesaplar",
+    "💰 Kasa",
+    "🏦 Banka",
+    "📊 Raporlar",
+    "➕ Ürün Ekle",
+    "💵 Döviz",
+    "⚙️ Ayarlar",
+]
+
+# Eğer giriş yapan kişi admin ise özel paneli ekle
+if st.session_state.is_admin:
+    menu_listesi.insert(1, "🔒 Yönetici Paneli")
+
+
+# SIDEBAR
+with st.sidebar:
+    st.markdown(
+        f"""
     <div class="sidebar-logo">
         <div class="brand">🪑 HAYAL MOBİLYA</div>
         <div class="sub">ÖN MUHASEBE & STOK</div>
@@ -263,31 +406,13 @@ with st.sidebar:
 
     st.markdown("---")
 
-    menu_secim = st.radio(
-        "MENÜ",
-        [
-            "🏠 Dashboard",
-            "📦 Ürünler",
-            "🧾 Satış Faturası Kes",
-            "📄 Fatura ile Stok İşle",
-            "📥 Stok Giriş",
-            "📤 Stok Çıkış",
-            "👥 Cari Hesaplar",
-            "💰 Kasa",
-            "🏦 Banka",
-            "📊 Raporlar",
-            "➕ Ürün Ekle",
-            "💵 Döviz",
-            "⚙️ Ayarlar",
-        ],
-        index=0,
-        key="desktop_menu",
-    )
+    menu_secim = st.radio("MENÜ", menu_listesi, index=0, key="desktop_menu")
 
     st.markdown("---")
 
+    rol_etiketi = "Sistem Yöneticisi" if st.session_state.is_admin else "Aktif Personel"
     st.markdown(
-        """
+        f"""
     <div style="
         background:#111820;
         border:1px solid #202630;
@@ -295,12 +420,28 @@ with st.sidebar:
         border-radius:10px;
         font-size:12px;
     ">
-        <b>👤 Onur Yılmaz</b><br>
-        <span style="color:#6f7a8b;">Yönetici</span>
+        <b>👤 {st.session_state.current_user}</b><br>
+        <span style="color:#42d392;">{rol_etiketi}</span>
     </div>
     """,
         unsafe_allow_html=True,
     )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🚪 Güvenli Çıkış"):
+        # Çıkış logu ekle
+        zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.session_state.personel_loglari.insert(
+            0,
+            {
+                "Kullanıcı": st.session_state.current_user,
+                "İşlem": "Çıkış Yapıldı",
+                "Zaman": zaman_str,
+            },
+        )
+        st.session_state.authenticated = False
+        st.session_state.is_admin = False
+        st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.info("📞 Destek\n\n444 43 19")
@@ -311,10 +452,10 @@ with st.sidebar:
 # =========================================================
 
 st.markdown(
-    """
+    f"""
 <div class="topbar">
     <div class="topbar-title">Hayal Mobilya • Ön Muhasebe Yönetim Paneli</div>
-    <div class="topbar-user">👤 Onur Yılmaz</div>
+    <div class="topbar-user">👤 {st.session_state.current_user}</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -334,10 +475,63 @@ kritik_stok = df[df["Bakiye"] <= 3]
 
 
 # =========================================================
+# YÖNETİCİ PANELİ (SADECE ADMİN GÖREBİLİR)
+# =========================================================
+
+if menu_secim == "🔒 Yönetici Paneli":
+    if not st.session_state.is_admin:
+        st.error("❌ Bu sayfaya erişim yetkiniz yok!")
+        st.stop()
+
+    st.markdown(
+        '<div class="page-title">🔒 Yönetici Paneli & Personel Takibi</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Personellerin sistem giriş/çıkış hareketlerini ve güvenlik loglarını buradan takip edebilirsiniz.</div>',
+        unsafe_allow_html=True,
+    )
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(
+            f"""
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-title">Toplam Kayıtlı Personel</div>
+            <div class="stat-value">{len(st.session_state.users)}</div>
+            <div class="stat-change">Aktif hesap sayısı</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+    with c2:
+        st.markdown(
+            f"""
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-title">Toplam Sistem Hareketi (Log)</div>
+            <div class="stat-value">{len(st.session_state.personel_loglari)}</div>
+            <div class="stat-change">Giriş/Çıkış kayıtları</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        '<div class="section-title">🕒 Personel Giriş - Çıkış Geçmişi</div>',
+        unsafe_allow_html=True,
+    )
+
+    log_df = pd.DataFrame(st.session_state.personel_loglari)
+    st.dataframe(log_df, use_container_width=True, hide_index=True)
+
+
+# =========================================================
 # DASHBOARD
 # =========================================================
 
-if menu_secim == "🏠 Dashboard":
+elif menu_secim == "🏠 Dashboard":
     st.markdown(
         '<div class="page-title">Dashboard</div>', unsafe_allow_html=True
     )
@@ -433,7 +627,7 @@ elif menu_secim == "📦 Ürünler":
 
 
 # =========================================================
-# SATIŞ FATURASI KES (YENİ ÖZELLİK)
+# SATIŞ FATURASI KES
 # =========================================================
 
 elif menu_secim == "🧾 Satış Faturası Kes":
@@ -477,7 +671,6 @@ elif menu_secim == "🧾 Satış Faturası Kes":
 
         if fatura_kes_btn:
             if musteri_adi and secilen_urun_fatura:
-                # Stok kontrolü ve düşümü
                 idx = st.session_state.stok[
                     st.session_state.stok["Ürün Adı"] == secilen_urun_fatura
                 ].index
@@ -493,17 +686,14 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                         f"❌ Yetersiz Stok! Mevcut stok ({mevcut_bakiye}), talep edilen miktardan ({satis_adedi}) az."
                     )
                 else:
-                    # Stoktan düş
                     st.session_state.stok.loc[idx, "Bakiye"] -= satis_adedi
 
-                    # Tutar hesapla (KDV %20 dahil varsayalım)
                     toplam_tutar = Birim_fiyat * satis_adedi
                     kdv_tutar = toplam_tutar - (toplam_tutar / 1.20)
                     matrah = toplam_tutar - kdv_tutar
 
                     fatura_no = f"HYL2026{len(st.session_state.faturalar)+1:04d}"
 
-                    # Faturayı hafızaya kaydet
                     yeni_fatura = {
                         "Fatura No": fatura_no,
                         "Tarih": str(fatura_tarihi),
@@ -518,7 +708,6 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                         f"🎉 Fatura başarıyla kesildi! Fatura No: **{fatura_no}**"
                     )
 
-                    # E-Fatura Şablonu Görseli
                     st.markdown(
                         f"""
                     <div class="invoice-box">
@@ -706,7 +895,7 @@ elif menu_secim == "💰 Kasa":
 elif menu_secim == "🏦 Banka":
     st.markdown(
         '<div class="page-title">🏦 Banka Hesapları</div>',
-        unsafe_allow_html=T
+        unsafe_allow_html=True,
     )
     st.info("Banka hesapları aktif.")
 
@@ -742,7 +931,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.2.0
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.4.0
 </div>
 """,
     unsafe_allow_html=True,
