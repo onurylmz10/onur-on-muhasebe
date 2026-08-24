@@ -7,7 +7,7 @@ import streamlit as st
 # 1. SAYFA YAPILANDIRMASI & MODERN KOYU TEMA STİLLERİ
 # =========================================================
 st.set_page_config(
-    page_title="Hayal Mobilya ERP & Stok Yönetimi v3.5",
+    page_title="Hayal Mobilya ERP & Stok Yönetimi v3.6",
     page_icon="🪑",
     layout="wide",
 )
@@ -54,7 +54,7 @@ st.markdown(
 )
 
 # =========================================================
-# 2. SESSION STATE (ORTAK GLOBAL VERİLER)
+# 2. SESSION STATE (ORTAK GLOBAL VERİLER - TEK KAYNAK)
 # =========================================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -73,7 +73,7 @@ if "global_users" not in st.session_state:
         "personel": "0000",
     }
 
-# Stok Veritabanı
+# Stok Veritabanı (Tüm kullanıcılar buradaki ortak DataFrame'i kullanır)
 if "global_stok" not in st.session_state:
     st.session_state.global_stok = pd.DataFrame(
         [
@@ -172,11 +172,11 @@ if "global_personel_loglari" not in st.session_state:
 
 
 # =========================================================
-# 3. GİRİŞ EKRANI (BENİ HATIRLA ÖZELLİĞİ İLE)
+# 3. GİRİŞ EKRANI
 # =========================================================
 if not st.session_state.logged_in:
     st.markdown(
-        "<h2 style='text-align: center; color: #ffffff;'>🪑 Hayal Mobilya ERP v3.5 Giriş</h2>",
+        "<h2 style='text-align: center; color: #ffffff;'>🪑 Hayal Mobilya ERP v3.6 Giriş</h2>",
         unsafe_allow_html=True,
     )
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -239,7 +239,7 @@ if not st.session_state.logged_in:
 # 4. SOL MENÜ
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
-st.sidebar.caption("ERP & STOK YÖNETİMİ v3.5")
+st.sidebar.caption("ERP & STOK YÖNETİMİ v3.6")
 st.sidebar.divider()
 
 st.sidebar.markdown("**MENÜ**")
@@ -248,7 +248,7 @@ menu_listesi = [
     "🏠 Ana Sayfa",
     "📦 Ürün Kataloğu & Stok",
     "➕ Manuel Stok Ekle",
-    "📄 PDF / E-Fatura İçe Aktar",  # Yeni Eklenen Özellik
+    "📄 PDF / E-Fatura İçe Aktar",
     "🔨 Hızlı İmalat / Stok Güncelle",
     "📋 Stok Hareket Geçmişi",
     "🧾 Satış Faturası Kes",
@@ -344,14 +344,7 @@ if menu_secim == "🏠 Ana Sayfa":
 
     with col_sag:
         st.markdown('<div class="section-header">⚡ Hızlı İşlem Kısayolları</div>', unsafe_allow_html=True)
-        sc1, sc2 = st.columns(2)
-        with sc1:
-            if st.button("🔨 Hızlı İmalat Aç", use_container_width=True):
-                pass
-        with sc2:
-            if st.button("🧾 Fatura Kes", use_container_width=True):
-                pass
-        st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı.")
+        st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı. Tüm stoklar ortaktır.")
 
 
 # --- 2. YÖNETİCİ PANELİ ---
@@ -376,14 +369,14 @@ elif menu_secim == "⚙️ Yönetici Paneli":
 # --- 3. ÜRÜN KATALOĞU & STOK ---
 elif menu_secim == "📦 Ürün Kataloğu & Stok":
     st.markdown('<div class="page-title">Ürün Kataloğu & Depo Envanteri</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Tüm depodaki ürünlerin güncel listesi ve fiyatları.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Tüm depodaki ürünlerin güncel ve ortak listesi (Personel ve Admin ortak görür).</div>', unsafe_allow_html=True)
     st.dataframe(st.session_state.global_stok, use_container_width=True, hide_index=True)
 
 
 # --- 4. MANUEL STOK EKLE ---
 elif menu_secim == "➕ Manuel Stok Ekle":
     st.markdown('<div class="page-title">Manuel Stok Girişi</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Depoya dışarıdan veya bağımsız olarak manuel miktar ekleyin.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Buradan yapılan eklemeler anında tüm personel ve admin ekranlarındaki depoya yansır.</div>', unsafe_allow_html=True)
 
     with st.form("manuel_stok_form"):
         m_urun = st.selectbox("Ürün Seç", st.session_state.global_stok["Ürün Adı"].tolist())
@@ -403,23 +396,22 @@ elif menu_secim == "➕ Manuel Stok Ekle":
                     "İşlem": f"Manuel Ekleme (+): {m_aciklama}",
                     "Miktar": m_adet
                 })
-                st.success(f"✅ İŞLEM BAŞARILI: {m_urun} için {m_adet} adet manuel stok eklendi!")
+                st.success(f"✅ İŞLEM BAŞARILI: {m_urun} için {m_adet} adet manuel stok eklendi ve depoya işlendi!")
                 st.toast("Stok başarıyla güncellendi.", icon="✅")
             else:
                 st.error("❌ İŞLEM BAŞARISIZ: Miktar 0'dan büyük olmalıdır!")
 
 
-# --- 5. PDF / E-FATURA İÇE AKTAR (YENİ ÖZELLİK) ---
+# --- 5. PDF / E-FATURA İÇE AKTAR ---
 elif menu_secim == "📄 PDF / E-Fatura İçe Aktar":
     st.markdown('<div class="page-title">PDF / E-Fatura İçe Aktar & Artı Stok İşle</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Tedarikçiden gelen PDF faturayı yükleyin, sistem okusun ve otomatik olarak depoya artı (+) stok olarak işlesin.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Tedarikçiden gelen faturayı yükleyin, sistem okusun ve ortak depoya artı (+) stok olarak eklesin.</div>', unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader("Tedarikçi Fatura Dosyası Yükle (PDF / XML)", type=["pdf", "xml", "txt"])
 
     if uploaded_file is not None:
         st.info(f"📄 Yüklenen Belge: **{uploaded_file.name}** başarıyla tarandı.")
         
-        # Simüle Edilmiş Fatura Kalemleri Çıkarımı
         st.markdown("#### 🔍 Faturadan Tespit Edilen Kalemler")
         simule_fatura_kalemleri = pd.DataFrame([
             {"Ürün Adı": "Viyana Köşe Koltuk Takımı", "Gelen Miktar": 4, "Birim Fiyat": 12000.0},
@@ -428,17 +420,14 @@ elif menu_secim == "📄 PDF / E-Fatura İçe Aktar":
         st.dataframe(simule_fatura_kalemleri, use_container_width=True, hide_index=True)
 
         if st.button("📥 Faturadaki Ürünleri Depoya Artı Stok Olarak Ekle", use_container_width=True):
-            islem_basarili = True
             for index, row in simule_fatura_kalemleri.iterrows():
                 u_adi = row["Ürün Adı"]
                 gelen_mik = int(row["Gelen Miktar"])
                 
-                # Ürün stokta var mı kontrol et, varsa ekle
                 if u_adi in st.session_state.global_stok["Ürün Adı"].values:
                     idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == u_adi].index[0]
                     st.session_state.global_stok.loc[idx, "Bakiye"] += gelen_mik
                 else:
-                    # Yoksa yeni ürün olarak ekle
                     yeni_sat = pd.DataFrame([{
                         "Ürün Adı": u_adi, 
                         "Barkod": str(random.randint(8690000000000, 8699999999999)),
@@ -458,11 +447,8 @@ elif menu_secim == "📄 PDF / E-Fatura İçe Aktar":
                     "Miktar": gelen_mik
                 })
 
-            if islem_basarili:
-                st.success("✅ İŞLEM BAŞARILI: Faturadaki tüm ürünler depoya artı (+) stok olarak işlendi!")
-                st.toast("PDF faturası başarıyla işlendi.", icon="🚀")
-            else:
-                st.error("❌ İŞLEM BAŞARISIZ: Fatura işlenirken bir hata oluştu!")
+            st.success("✅ İŞLEM BAŞARILI: Faturadaki tüm ürünler ortak depoya artı (+) stok olarak işlendi!")
+            st.toast("PDF faturası başarıyla işlendi.", icon="🚀")
     else:
         st.warning("⚠️ Lütfen işlemek için bir PDF veya e-Fatura belgesi yükleyin.")
 
@@ -504,7 +490,7 @@ elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
 # --- 7. STOK HAREKET GEÇMİŞİ ---
 elif menu_secim == "📋 Stok Hareket Geçmişi":
     st.markdown('<div class="page-title">Stok Hareket Geçmişi</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Geçmişte yapılan imalat, PDF fatura ve depo çıkış logları.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Personel ve yöneticiler tarafından yapılan tüm stok hareketleri.</div>', unsafe_allow_html=True)
     if len(st.session_state.global_personel_loglari) > 0:
         st.dataframe(pd.DataFrame(st.session_state.global_personel_loglari), use_container_width=True, hide_index=True)
     else:
@@ -646,7 +632,7 @@ elif menu_secim == "💰 Kasa & Finans":
     st.markdown('<div class="page-title">Kasa & Finansal Durum</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ciro ve nakit akışı raporu.</div>', unsafe_allow_html=True)
 
-    toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if len(st.session_state.global_faturalar) > 0 else 0.0
+    toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalار]) if len(st.session_state.global_faturalar) > 0 else 0.0
     f1, f2 = st.columns(2)
     with f1:
         st.markdown(f"""<div class="metric-card"><div class="metric-title">Toplam Fatura Cirosu</div><div class="metric-value">₺{toplam_ciro:,.2f}</div></div>""", unsafe_allow_html=True)
@@ -686,7 +672,7 @@ elif menu_secim == "🔒 Şifre Değiştir":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.5 • Tüm Hakları Saklıdır.
+    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.6 • Tüm Hakları Saklıdır.
 </div>
 """,
     unsafe_allow_html=True,
