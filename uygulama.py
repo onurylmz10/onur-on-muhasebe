@@ -266,7 +266,6 @@ if "cariler" not in st.session_state:
         },
     ])
 
-# Banka Hesapları Veri Yapısı
 if "banka_hesaplari" not in st.session_state:
     st.session_state.banka_hesaplari = pd.DataFrame([
         {
@@ -288,6 +287,9 @@ if "banka_hesaplari" not in st.session_state:
 if "faturalar" not in st.session_state:
     st.session_state.faturalar = []
 
+if "sifre_unuttum_aktif" not in st.session_state:
+    st.session_state.sifre_unuttum_aktif = False
+
 
 # =========================================================
 # GİRİŞ EKRANI
@@ -296,7 +298,7 @@ if "faturalar" not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown(
         """
-        <div style="max-width: 400px; margin: 60px auto; text-align: center;">
+        <div style="max-width: 400px; margin: 40px auto 10px auto; text-align: center;">
             <h1 style="color: white; font-size: 26px; font-weight: 800;">🪑 HAYAL MOBİLYA</h1>
             <p style="color: #64748b; font-size: 13px;">Kurumsal Ön Muhasebe & Akıllı Stok Yönetimi</p>
         </div>
@@ -306,33 +308,74 @@ if not st.session_state.authenticated:
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        secilen_kullanici = st.selectbox(
-            "Kullanıcı Seçin", list(st.session_state.users.keys())
-        )
-        k_sifre = st.text_input("Şifre", type="password")
-        if st.button("Güvenli Giriş Yap"):
-            if (
-                secilen_kullanici in st.session_state.users
-                and st.session_state.users[secilen_kullanici] == k_sifre
-            ):
-                st.session_state.authenticated = True
-                st.session_state.current_user = secilen_kullanici
-                st.session_state.is_admin = (
-                    secilen_kullanici.lower() == "admin"
-                )
+        if not st.session_state.sifre_unuttum_aktif:
+            secilen_kullanici = st.selectbox(
+                "Kullanıcı Seçin", list(st.session_state.users.keys())
+            )
+            k_sifre = st.text_input("Şifre", type="password")
+            
+            if st.button("Güvenli Giriş Yap"):
+                if (
+                    secilen_kullanici in st.session_state.users
+                    and st.session_state.users[secilen_kullanici] == k_sifre
+                ):
+                    st.session_state.authenticated = True
+                    st.session_state.current_user = secilen_kullanici
+                    st.session_state.is_admin = (
+                        secilen_kullanici.lower() == "admin"
+                    )
 
-                st.session_state.personel_loglari.insert(
-                    0,
-                    {
-                        "Kullanıcı": secilen_kullanici,
-                        "İşlem": "Giriş Yapıldı",
-                        "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    },
-                )
-                st.success("Giriş başarılı, yönlendiriliyorsunuz...")
+                    st.session_state.personel_loglari.insert(
+                        0,
+                        {
+                            "Kullanıcı": secilen_kullanici,
+                            "İşlem": "Giriş Yapıldı",
+                            "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        },
+                    )
+                    st.success("Giriş başarılı, yönlendiriliyorsunuz...")
+                    st.rerun()
+                else:
+                    st.error("Hatalı şifre girdiniz.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("🔑 Şifremi Unuttum"):
+                st.session_state.sifre_unuttum_aktif = True
                 st.rerun()
-            else:
-                st.error("Hatalı şifre girdiniz.")
+        else:
+            st.markdown("### Şifre Sıfırlama")
+            s_kullanici = st.selectbox(
+                "Kullanıcı Seçin", list(st.session_state.users.keys()), key="sifirla_kullanici"
+            )
+            yeni_sifre_1 = st.text_input("Yeni Şifre", type="password", key="y_sifre1")
+            yeni_sifre_2 = st.text_input("Yeni Şifre (Tekrar)", type="password", key="y_sifre2")
+
+            if st.button("Şifreyi Güncelle ve Giriş Yap"):
+                if yeni_sifre_1 and yeni_sifre_1 == yeni_sifre_2:
+                    st.session_state.users[s_kullanici] = yeni_sifre_1
+                    st.session_state.authenticated = True
+                    st.session_state.current_user = s_kullanici
+                    st.session_state.is_admin = (s_kullanici.lower() == "admin")
+                    st.session_state.sifre_unuttum_aktif = False
+
+                    st.session_state.personel_loglari.insert(
+                        0,
+                        {
+                            "Kullanıcı": s_kullanici,
+                            "İşlem": "Şifre Sıfırlandı ve Giriş Yapıldı",
+                            "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        },
+                    )
+                    st.success("Şifreniz başarıyla güncellendi, sisteme giriş yapılıyor...")
+                    st.rerun()
+                else:
+                    st.error("Yeni şifreler boş olamaz ve birbiriyle uyuşmalıdır!")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("⬅️ Geri Dön (Giriş Ekranına Git)"):
+                st.session_state.sifre_unuttum_aktif = False
+                st.rerun()
+
     st.stop()
 
 
@@ -407,7 +450,7 @@ st.markdown(
 # 1. YÖNETİCİ PANELİ
 # =========================================================
 
-if menu_secim == "🔒 Yönetici Paneli":
+elif menu_secim == "🔒 Yönetici Paneli":
     if not st.session_state.is_admin:
         st.error("Bu alana erişim yetkiniz bulunmuyor.")
         st.stop()
@@ -811,7 +854,7 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
 
 
 # =========================================================
-# 9. BANKA HESAPLARI & IBAN YÖNETİMİ (YENİ EKLENEN)
+# 9. BANKA HESAPLARI & IBAN YÖNETİMİ
 # =========================================================
 
 elif menu_secim == "🏦 Banka Hesapları":
@@ -852,7 +895,6 @@ elif menu_secim == "🏦 Banka Hesapları":
 
         if st.form_submit_button("💾 Banka Hesabını Kaydet"):
             if b_adi and b_iban:
-                # IBAN format temizliği veya kontrolü eklenebilir
                 yeni_b = pd.DataFrame([{
                     "Banka Adı": b_adi,
                     "Şube / Kod": b_sube,
