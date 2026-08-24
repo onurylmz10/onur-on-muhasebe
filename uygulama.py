@@ -1,4 +1,6 @@
 from datetime import datetime
+import random
+import uuid
 import pandas as pd
 import streamlit as st
 
@@ -245,7 +247,6 @@ if "stok" not in st.session_state:
         },
     ])
 
-# GÜVENCE KONTROLÜ: Tabloda Kritik Sınır sütunu eksikse otomatik ekle
 if "Kritik Sınır" not in st.session_state.stok.columns:
     st.session_state.stok["Kritik Sınır"] = 3
 
@@ -453,7 +454,6 @@ elif menu_secim == "🏠 Ana Sayfa":
     maliyet_toplam = (df_stok["Alış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
     satis_toplam = (df_stok["Satış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
 
-    # Kritik stok kontrolü
     kritik_df = df_stok[df_stok["Bakiye"] <= df_stok["Kritik Sınır"]]
 
     c1, c2, c3, c4 = st.columns(4)
@@ -792,7 +792,7 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
 
 
 # =========================================================
-# 9. YENİ ÜRÜN KARTI AÇ
+# 9. YENİ ÜRÜN KARTI AÇ (OTOMATİK VE RASTGELE BARKOD ÖZELLİKLİ)
 # =========================================================
 
 elif menu_secim == "➕ Yeni Ürün Kartı Aç":
@@ -800,11 +800,24 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
         '<div class="page-title">➕ Yeni Ürün / Model Tanımla</div>',
         unsafe_allow_html=True,
     )
+
+    # Oturumda bu sayfa için benzersiz rastgele barkod üretilmemişse üret
+    if "random_barkod_uret" not in st.session_state:
+        st.session_state.random_barkod_uret = "".join(
+            [str(random.randint(0, 9)) for _ in range(13)]
+        )
+
     with st.form("yeni_urun_kart"):
         c1, c2 = st.columns(2)
         with c1:
             u_ad = st.text_input("Ürün Model Adı *")
-            u_barkod = st.text_input("Barkod Numarası *")
+
+            # Tamamen alakasız ve rastgele üretilen otomatik barkod
+            u_barkod = st.text_input(
+                "Barkod Numarası (Otomatik Üretildi) *",
+                value=st.session_state.random_barkod_uret,
+            )
+
             u_birim = st.selectbox("Birim", ["Takım", "Adet", "Set"])
         with c2:
             u_alis = st.number_input("Maliyet / Alış Fiyatı (TL)", min_value=0.0)
@@ -813,21 +826,49 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                 "Kritik Stok Uyarısı Sınırı", min_value=1, value=3
             )
 
-        if st.form_submit_button("💾 Ürünü Kataloğa Kaydet"):
+        # Yeni barkod üretme butonu (isteğe bağlı yenilemek için)
+        kol1, kol2 = st.columns(2)
+        with kol1:
+            kaydet_buton = st.form_submit_button("💾 Ürünü Kataloğa Kaydet")
+        with kol2:
+            yeni_kod_buton = st.form_submit_button("🔄 Yeni Barkod Üret")
+
+        if yeni_kod_buton:
+            st.session_state.random_barkod_uret = "".join(
+                [str(random.randint(0, 9)) for _ in range(13)]
+            )
+            st.rerun()
+
+        if kaydet_buton:
             if u_ad and u_barkod:
-                yeni_satir = pd.DataFrame([{
-                    "Ürün Adı": u_ad,
-                    "Barkod": u_barkod,
-                    "Alış Fiyatı (TL)": u_alis,
-                    "Satış Fiyatı (TL)": u_satis,
-                    "Bakiye": 0,
-                    "Kritik Sınır": u_kritik,
-                    "Birim": u_birim,
-                }])
-                st.session_state.stok = pd.concat(
-                    [st.session_state.stok, yeni_satir], ignore_index=True
-                )
-                st.success("Yeni ürün kartı başarıyla oluşturuldu.")
+                # Barkodun benzersiz olup olmadığını kontrol et
+                if u_barkod in st.session_state.stok["Barkod"].astype(
+                    str
+                ).values:
+                    st.error(
+                        "Bu barkod sistemde zaten kayıtlı! Lütfen yeni bir barkod üretin."
+                    )
+                else:
+                    yeni_satir = pd.DataFrame([{
+                        "Ürün Adı": u_ad,
+                        "Barkod": str(u_barkod),
+                        "Alış Fiyatı (TL)": u_alis,
+                        "Satış Fiyatı (TL)": u_satis,
+                        "Bakiye": 0,
+                        "Kritik Sınır": u_kritik,
+                        "Birim": u_birim,
+                    }])
+                    st.session_state.stok = pd.concat(
+                        [st.session_state.stok, yeni_satir], ignore_index=True
+                    )
+                    # Kayıttan sonra sıradaki ürün için yeni rastgele barkod hazırla
+                    st.session_state.random_barkod_uret = "".join(
+                        [str(random.randint(0, 9)) for _ in range(13)]
+                    )
+                    st.success(
+                        "Yeni ürün kartı ve benzersiz barkod başarıyla oluşturuldu."
+                    )
+                    st.rerun()
             else:
                 st.warning("Lütfen zorunlu alanları doldurun.")
 
