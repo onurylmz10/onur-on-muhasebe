@@ -213,30 +213,37 @@ if not st.session_state.logged_in:
 
 
 # =========================================================
-# 4. SOL MENÜ (EMOJİLİ)
+# 4. SOL MENÜ (YETKİYE GÖRE DİNAMİK)
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
 st.sidebar.caption("ERP & STOK YÖNETİMİ v3.4")
 st.sidebar.divider()
 
 st.sidebar.markdown("**MENÜ**")
+
+# Ortak menü listesi
+menu_listesi = [
+    "🏠 Ana Sayfa",
+    "📦 Ürün Kataloğu & Stok",
+    "🔨 Hızlı İmalat / Stok Güncelle",
+    "📋 Stok Hareket Geçmişi",
+    "🧾 Satış Faturası Kes",
+    "📄 Fatura / İrsaliye İşle",
+    "🤝 Cari Hesaplar & Borçlar",
+    "🏦 Banka Hesapları",
+    "➕ Yeni Ürün Kartı Aç",
+    "💰 Kasa & Finans",
+    "📊 Raporlar & Analiz",
+    "🔒 Şifre Değiştir",
+]
+
+# Eğer kullanıcı Admin ise Yönetici Paneli seçeneğini ekle
+if st.session_state.user_role == "Admin":
+    menu_listesi.insert(1, "⚙️ Yönetici Paneli")
+
 menu_secim = st.sidebar.radio(
     "Navigasyon",
-    [
-        "🏠 Ana Sayfa",
-        "⚙️ Yönetici Paneli",
-        "📦 Ürün Kataloğu & Stok",
-        "🔨 Hızlı İmalat / Stok Güncelle",
-        "📋 Stok Hareket Geçmişi",
-        "🧾 Satış Faturası Kes",
-        "📄 Fatura / İrsaliye İşle",
-        "🤝 Cari Hesaplar & Borçlar",
-        "🏦 Banka Hesapları",
-        "➕ Yeni Ürün Kartı Aç",
-        "💰 Kasa & Finans",
-        "📊 Raporlar & Analiz",
-        "🔒 Şifre Değiştir",
-    ],
+    menu_listesi,
     label_visibility="collapsed",
 )
 
@@ -307,7 +314,7 @@ if menu_secim == "🏠 Ana Sayfa":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # İkinci Metrik & Özet Satırı (Hatası düzeltilen kısım)
+    # İkinci Metrik & Özet Satırı
     col_sol, col_sag = st.columns([1.2, 1])
     with col_sol:
         st.markdown('<div class="section-header">🚨 Kritik Eşiğindeki Ürünler</div>', unsafe_allow_html=True)
@@ -328,7 +335,7 @@ if menu_secim == "🏠 Ana Sayfa":
         st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı.")
 
 
-# --- 2. YÖNETİCİ PANELİ ---
+# --- 2. YÖNETİCİ PANELİ (SADECE ADMIN) ---
 elif menu_secim == "⚙️ Yönetici Paneli":
     st.markdown('<div class="page-title">Yönetici Kontrol Paneli</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Sistem yetkileri, kullanıcı yönetimi ve genel log kayıtları.</div>', unsafe_allow_html=True)
