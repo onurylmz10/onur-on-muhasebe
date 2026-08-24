@@ -140,7 +140,7 @@ if "global_banka_hesaplari" not in st.session_state:
         ]
     )
 
-# Fatura ve Loglar (Örnek başlangıç verileri ile dolu)
+# Fatura ve Loglar
 if "global_faturalar" not in st.session_state:
     st.session_state.global_faturalar = [
         {
@@ -244,6 +244,7 @@ st.sidebar.markdown("**MENÜ**")
 menu_listesi = [
     "🏠 Ana Sayfa",
     "📦 Ürün Kataloğu & Stok",
+    "➕ Manuel Stok Ekle",  # İstediğiniz gibi geri eklendi
     "🔨 Hızlı İmalat / Stok Güncelle",
     "📋 Stok Hareket Geçmişi",
     "🧾 Satış Faturası Kes",
@@ -293,7 +294,6 @@ if menu_secim == "🏠 Ana Sayfa":
     ]
     kritik_sayi = len(kritik_urunler)
 
-    # 1. Satır Metrik Kartları
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f"""
@@ -331,7 +331,6 @@ if menu_secim == "🏠 Ana Sayfa":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # İkinci Satır (Kritik Eşik & Hızlı İşlem Kısayolları)
     col_sol, col_sag = st.columns([1.2, 1])
     with col_sol:
         st.markdown('<div class="section-header">🚨 Kritik Eşiğindeki Ürünler</div>', unsafe_allow_html=True)
@@ -351,7 +350,6 @@ if menu_secim == "🏠 Ana Sayfa":
                 pass
         st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı.")
 
-    # Üçüncü Satır (Doldurulan Yeni Veri Bölümleri)
     st.markdown("<br>", unsafe_allow_html=True)
     tab_sol, tab_sag = st.columns(2)
     
@@ -396,7 +394,33 @@ elif menu_secim == "📦 Ürün Kataloğu & Stok":
     st.dataframe(st.session_state.global_stok, use_container_width=True, hide_index=True)
 
 
-# --- 4. HIZLI İMALAT / STOK GÜNCELLE ---
+# --- 4. MANUEL STOK EKLE (YENİDEN EKLENDİ) ---
+elif menu_secim == "➕ Manuel Stok Ekle":
+    st.markdown('<div class="page-title">Manuel Stok Girişi</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Depoya dışarıdan veya bağımsız olarak manuel miktar ekleyin.</div>', unsafe_allow_html=True)
+
+    with st.form("manuel_stok_form"):
+        m_urun = st.selectbox("Ürün Seç", st.session_state.global_stok["Ürün Adı"].tolist())
+        m_adet = st.number_input("Eklenecek Miktar", min_value=1, step=1, value=1)
+        m_aciklama = st.text_input("İşlem Açıklaması / Neden", value="Manuel stok girişi")
+        m_kaydet = st.form_submit_button("Manuel Stok Ekle")
+
+        if m_kaydet:
+            idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == m_urun].index[0]
+            st.session_state.global_stok.loc[idx, "Bakiye"] += m_adet
+            
+            st.session_state.global_personel_loglari.insert(0, {
+                "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Personel": st.session_state.current_user,
+                "Ürün": m_urun,
+                "İşlem": f"Manuel Ekleme (+): {m_aciklama}",
+                "Miktar": m_adet
+            })
+            st.success(f"✅ {m_urun} için {m_adet} adet manuel stok eklendi!")
+            st.rerun()
+
+
+# --- 5. HIZLI İMALAT / STOK GÜNCELLE ---
 elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
     st.markdown('<div class="page-title">Hızlı İmalat & Stok Güncelleme</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Üretimden çıkan ürünleri depoya ekleyin veya düşün.</div>', unsafe_allow_html=True)
@@ -428,7 +452,7 @@ elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
             st.rerun()
 
 
-# --- 5. STOK HAREKET GEÇMİŞİ ---
+# --- 6. STOK HAREKET GEÇMİŞİ ---
 elif menu_secim == "📋 Stok Hareket Geçmişi":
     st.markdown('<div class="page-title">Stok Hareket Geçmişi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Geçmişte yapılan imalat ve depo çıkış logları.</div>', unsafe_allow_html=True)
@@ -438,7 +462,7 @@ elif menu_secim == "📋 Stok Hareket Geçmişi":
         st.info("Henüz kaydedilmiş stok hareketi bulunmuyor.")
 
 
-# --- 6. SATIŞ FATURASI KES ---
+# --- 7. SATIŞ FATURASI KES ---
 elif menu_secim == "🧾 Satış Faturası Kes":
     st.markdown('<div class="page-title">Satış Faturası Kes</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Müşterilere resmi fatura düzenleme ekranı.</div>', unsafe_allow_html=True)
@@ -465,7 +489,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
             st.rerun()
 
 
-# --- 7. FATURA / İRSALİYE İŞLE ---
+# --- 8. FATURA / İRSALİYE İŞLE ---
 elif menu_secim == "📄 Fatura / İrsaliye İşle":
     st.markdown('<div class="page-title">Fatura / İrsaliye İşlemleri</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Gelen tedarikçi irsaliyeleri ve fatura kayıtları.</div>', unsafe_allow_html=True)
@@ -492,7 +516,7 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
         st.dataframe(pd.DataFrame(st.session_state.global_irsaliyeler), use_container_width=True, hide_index=True)
 
 
-# --- 8. CARİ HESAPLAR & BORÇLAR ---
+# --- 9. CARİ HESAPLAR & BORÇLAR ---
 elif menu_secim == "🤝 Cari Hesaplar & Borçlar":
     st.markdown('<div class="page-title">Cari Hesaplar & Borç / Alacak</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Müşteri ve tedarikçilerin güncel bakiye durumları.</div>', unsafe_allow_html=True)
@@ -514,17 +538,20 @@ elif menu_secim == "🤝 Cari Hesaplar & Borçlar":
                     st.rerun()
 
 
-# --- 9. BANKA HESAPLARI ---
+# --- 10. BANKA HESAPLARI ---
 elif menu_secim == "🏦 Banka Hesapları":
     st.markdown('<div class="page-title">Banka Hesapları & IBAN Listesi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ticari banka hesapları ve IBAN bilgileri.</div>', unsafe_allow_html=True)
     st.dataframe(st.session_state.global_banka_hesaplari, use_container_width=True, hide_index=True)
 
 
-# --- 10. YENİ ÜRÜN KARTI AÇ ---
+# --- 11. YENİ ÜRÜN KARTI AÇ (OTOMATİK BARKODLU) ---
 elif menu_secim == "➕ Yeni Ürün Kartı Aç":
     st.markdown('<div class="page-title">Yeni Ürün Kartı Tanımla</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Kataloğa yeni bir mobilya modeli ekleyin.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Kataloğa yeni bir mobilya modeli ekleyin (Barkod otomatik üretilir).</div>', unsafe_allow_html=True)
+
+    # Otomatik benzersiz barkod üretme
+    otomatik_barkod = str(random.randint(8690000000000, 8699999999999))
 
     with st.form("yeni_urun_kart_form"):
         col1, col2 = st.columns(2)
@@ -533,25 +560,29 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
             u_alis = st.number_input("Alış Fiyatı (TL)", value=5000.0)
             u_satis = st.number_input("Satış Fiyatı (TL)", value=8500.0)
         with col2:
-            u_barkod = st.text_input("Barkod", value=str(random.randint(8690000000000, 8699999999999)))
+            st.text_input("Oto-Barkod (Sistem Tarafından Atandı)", value=otomatik_barkod, disabled=True)
             u_bakiye = st.number_input("Başlangıç Stok", value=5, min_value=0)
             u_kritik = st.number_input("Kritik Sınır", value=3, min_value=1)
             u_birim = st.selectbox("Birim", ["Takım", "Adet", "Set"])
 
-        if st.form_submit_button("Ürünü Kaydet"):
+        if st.form_submit_button("Ürünü Otomatik Barkodla Kaydet"):
             if u_ad:
                 yeni_sat = pd.DataFrame([{
-                    "Ürün Adı": u_ad, "Barkod": u_barkod,
-                    "Alış Fiyatı (TL)": u_alis, "Satış Fiyatı (TL)": u_satis,
-                    "Bakiye": u_bakiye, "Kritik Sınır": u_kritik, "Birim": u_birim
+                    "Ürün Adı": u_ad, 
+                    "Barkod": otomatik_barkod,
+                    "Alış Fiyatı (TL)": u_alis, 
+                    "Satış Fiyatı (TL)": u_satis,
+                    "Bakiye": u_bakiye, 
+                    "Kritik Sınır": u_kritik, 
+                    "Birim": u_birim
                 }])
                 st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_sat], ignore_index=True)
-                st.success(f"✅ {u_ad} kataloğa eklendi!")
+                st.success(f"✅ {u_ad} başarıyla eklendi! Otomatik Barkod: {otomatik_barkod}")
             else:
                 st.error("❌ Ürün adı boş olamaz!")
 
 
-# --- 11. KASA & FİNANS ---
+# --- 12. KASA & FİNANS ---
 elif menu_secim == "💰 Kasa & Finans":
     st.markdown('<div class="page-title">Kasa & Finansal Durum</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ciro ve nakit akışı raporu.</div>', unsafe_allow_html=True)
@@ -565,14 +596,14 @@ elif menu_secim == "💰 Kasa & Finans":
         st.markdown(f"""<div class="metric-card"><div class="metric-title">Toplam Depo Satış Potansiyeli</div><div class="metric-value">₺{depo_deger:,.2f}</div></div>""", unsafe_allow_html=True)
 
 
-# --- 12. RAPORLAR & ANALİZ ---
+# --- 13. RAPORLAR & ANALİZ ---
 elif menu_secim == "📊 Raporlar & Analiz":
     st.markdown('<div class="page-title">Raporlar & Analiz</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Stok ve ürün dağılım grafikleri.</div>', unsafe_allow_html=True)
     st.bar_chart(st.session_state.global_stok.set_index("Ürün Adı")["Bakiye"])
 
 
-# --- 13. ŞİFRE DEĞİŞTİR ---
+# --- 14. ŞİFRE DEĞİŞTİR ---
 elif menu_secim == "🔒 Şifre Değiştir":
     st.markdown('<div class="page-title">Şifre Değiştir</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Oturum açan hesap şifresini güncelleyin.</div>', unsafe_allow_html=True)
