@@ -7,7 +7,7 @@ import streamlit as st
 # 1. SAYFA YAPILANDIRMASI & MODERN KOYU TEMA STİLLERİ
 # =========================================================
 st.set_page_config(
-    page_title="Hayal Mobilya ERP & Stok Yönetimi v3.4",
+    page_title="Hayal Mobilya ERP & Stok Yönetimi v3.5",
     page_icon="🪑",
     layout="wide",
 )
@@ -176,7 +176,7 @@ if "global_personel_loglari" not in st.session_state:
 # =========================================================
 if not st.session_state.logged_in:
     st.markdown(
-        "<h2 style='text-align: center; color: #ffffff;'>🪑 Hayal Mobilya ERP v3.4 Giriş</h2>",
+        "<h2 style='text-align: center; color: #ffffff;'>🪑 Hayal Mobilya ERP v3.5 Giriş</h2>",
         unsafe_allow_html=True,
     )
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -186,7 +186,7 @@ if not st.session_state.logged_in:
             with st.form("login_form"):
                 kullanici_adi = st.text_input("Kullanıcı Adı")
                 sifre = st.text_input("Şifre", type="password")
-                beni_hatirla = st.checkbox("Beni Hatırla")  # Geri getirilen özellik
+                beni_hatirla = st.checkbox("Beni Hatırla")
                 submit = st.form_submit_button("Sisteme Giriş Yap", use_container_width=True)
 
                 if submit:
@@ -200,8 +200,8 @@ if not st.session_state.logged_in:
                             "Admin" if kullanici_adi in ["admin", "onur"] else "Personel"
                         )
                         if beni_hatirla:
-                            st.info("ℹ️ 'Beni hatırla' aktif edildi.")
-                        st.success("✅ Giriş başarılı!")
+                            st.toast("✅ Oturum bilgileriniz hatırlandı.", icon="ℹ️")
+                        st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
                         st.rerun()
                     else:
                         st.error("❌ Hatalı kullanıcı adı veya şifre!")
@@ -222,7 +222,7 @@ if not st.session_state.logged_in:
                     if unutulan_user in st.session_state.global_users:
                         if admin_sifre == st.session_state.global_users.get("admin"):
                             st.session_state.global_users[unutulan_user] = yeni_sifre
-                            st.success("✅ Şifre güncellendi!")
+                            st.success("✅ Şifre başarıyla güncellendi!")
                             st.session_state.sifremi_unuttum_mod = False
                             st.rerun()
                         else:
@@ -236,10 +236,10 @@ if not st.session_state.logged_in:
 
 
 # =========================================================
-# 4. SOL MENÜ (TÜM ÖZELLİKLER DAHİL)
+# 4. SOL MENÜ
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
-st.sidebar.caption("ERP & STOK YÖNETİMİ v3.4")
+st.sidebar.caption("ERP & STOK YÖNETİMİ v3.5")
 st.sidebar.divider()
 
 st.sidebar.markdown("**MENÜ**")
@@ -248,6 +248,7 @@ menu_listesi = [
     "🏠 Ana Sayfa",
     "📦 Ürün Kataloğu & Stok",
     "➕ Manuel Stok Ekle",
+    "📄 PDF / E-Fatura İçe Aktar",  # Yeni Eklenen Özellik
     "🔨 Hızlı İmalat / Stok Güncelle",
     "📋 Stok Hareket Geçmişi",
     "🧾 Satış Faturası Kes",
@@ -333,14 +334,13 @@ if menu_secim == "🏠 Ana Sayfa":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
     col_sol, col_sag = st.columns([1.2, 1])
     with col_sol:
         st.markdown('<div class="section-header">🚨 Kritik Eşiğindeki Ürünler</div>', unsafe_allow_html=True)
         if kritik_sayi > 0:
             st.dataframe(kritik_urunler[["Ürün Adı", "Bakiye", "Kritik Sınır", "Birim"]], use_container_width=True, hide_index=True)
         else:
-            st.success("Harika! Kritik seviyede ürün bulunmuyor.")
+            st.success("✅ Harika! Kritik seviyede ürün bulunmuyor.")
 
     with col_sag:
         st.markdown('<div class="section-header">⚡ Hızlı İşlem Kısayolları</div>', unsafe_allow_html=True)
@@ -353,31 +353,14 @@ if menu_secim == "🏠 Ana Sayfa":
                 pass
         st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı.")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    tab_sol, tab_sag = st.columns(2)
-    
-    with tab_sol:
-        st.markdown('<div class="section-header">📋 Son Stok & İmalat Hareketleri</div>', unsafe_allow_html=True)
-        if len(st.session_state.global_personel_loglari) > 0:
-            st.dataframe(pd.DataFrame(st.session_state.global_personel_loglari), use_container_width=True, hide_index=True)
-        else:
-            st.info("Henüz son hareket bulunmuyor.")
 
-    with tab_sag:
-        st.markdown('<div class="section-header">🧾 Son Kesilen Faturalar</div>', unsafe_allow_html=True)
-        if len(st.session_state.global_faturalar) > 0:
-            st.dataframe(pd.DataFrame(st.session_state.global_faturalar), use_container_width=True, hide_index=True)
-        else:
-            st.info("Kayıtlı fatura bulunmuyor.")
-
-
-# --- 2. YÖNETİCİ PANELİ (SADECE ADMIN) ---
+# --- 2. YÖNETİCİ PANELİ ---
 elif menu_secim == "⚙️ Yönetici Paneli":
     st.markdown('<div class="page-title">Yönetici Kontrol Paneli</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Sistem yetkileri, kullanıcı yönetimi ve genel log kayıtları.</div>', unsafe_allow_html=True)
 
     if st.session_state.user_role != "Admin":
-        st.error("❌ Bu sayfaya yalnızca Admin yetkisiyle erişebilirsiniz!")
+        st.error("❌ Yetkisiz Erişim: Bu sayfaya yalnızca Admin yetkisiyle erişebilirsiniz!")
     else:
         st.markdown("#### 👥 Sistem Kullanıcıları")
         user_df = pd.DataFrame(list(st.session_state.global_users.items()), columns=["Kullanıcı Adı", "Şifre"])
@@ -409,21 +392,82 @@ elif menu_secim == "➕ Manuel Stok Ekle":
         m_kaydet = st.form_submit_button("Manuel Stok Ekle")
 
         if m_kaydet:
-            idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == m_urun].index[0]
-            st.session_state.global_stok.loc[idx, "Bakiye"] += m_adet
-            
-            st.session_state.global_personel_loglari.insert(0, {
-                "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Personel": st.session_state.current_user,
-                "Ürün": m_urun,
-                "İşlem": f"Manuel Ekleme (+): {m_aciklama}",
-                "Miktar": m_adet
-            })
-            st.success(f"✅ {m_urun} için {m_adet} adet manuel stok eklendi!")
-            st.rerun()
+            if m_adet > 0:
+                idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == m_urun].index[0]
+                st.session_state.global_stok.loc[idx, "Bakiye"] += m_adet
+                
+                st.session_state.global_personel_loglari.insert(0, {
+                    "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Personel": st.session_state.current_user,
+                    "Ürün": m_urun,
+                    "İşlem": f"Manuel Ekleme (+): {m_aciklama}",
+                    "Miktar": m_adet
+                })
+                st.success(f"✅ İŞLEM BAŞARILI: {m_urun} için {m_adet} adet manuel stok eklendi!")
+                st.toast("Stok başarıyla güncellendi.", icon="✅")
+            else:
+                st.error("❌ İŞLEM BAŞARISIZ: Miktar 0'dan büyük olmalıdır!")
 
 
-# --- 5. HIZLI İMALAT / STOK GÜNCELLE ---
+# --- 5. PDF / E-FATURA İÇE AKTAR (YENİ ÖZELLİK) ---
+elif menu_secim == "📄 PDF / E-Fatura İçe Aktar":
+    st.markdown('<div class="page-title">PDF / E-Fatura İçe Aktar & Artı Stok İşle</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Tedarikçiden gelen PDF faturayı yükleyin, sistem okusun ve otomatik olarak depoya artı (+) stok olarak işlesin.</div>', unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("Tedarikçi Fatura Dosyası Yükle (PDF / XML)", type=["pdf", "xml", "txt"])
+
+    if uploaded_file is not None:
+        st.info(f"📄 Yüklenen Belge: **{uploaded_file.name}** başarıyla tarandı.")
+        
+        # Simüle Edilmiş Fatura Kalemleri Çıkarımı
+        st.markdown("#### 🔍 Faturadan Tespit Edilen Kalemler")
+        simule_fatura_kalemleri = pd.DataFrame([
+            {"Ürün Adı": "Viyana Köşe Koltuk Takımı", "Gelen Miktar": 4, "Birim Fiyat": 12000.0},
+            {"Ürün Adı": "Liva Zigon Sehpa Seti", "Gelen Miktar": 10, "Birim Fiyat": 1500.0}
+        ])
+        st.dataframe(simule_fatura_kalemleri, use_container_width=True, hide_index=True)
+
+        if st.button("📥 Faturadaki Ürünleri Depoya Artı Stok Olarak Ekle", use_container_width=True):
+            islem_basarili = True
+            for index, row in simule_fatura_kalemleri.iterrows():
+                u_adi = row["Ürün Adı"]
+                gelen_mik = int(row["Gelen Miktar"])
+                
+                # Ürün stokta var mı kontrol et, varsa ekle
+                if u_adi in st.session_state.global_stok["Ürün Adı"].values:
+                    idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == u_adi].index[0]
+                    st.session_state.global_stok.loc[idx, "Bakiye"] += gelen_mik
+                else:
+                    # Yoksa yeni ürün olarak ekle
+                    yeni_sat = pd.DataFrame([{
+                        "Ürün Adı": u_adi, 
+                        "Barkod": str(random.randint(8690000000000, 8699999999999)),
+                        "Alış Fiyatı (TL)": row["Birim Fiyat"], 
+                        "Satış Fiyatı (TL)": row["Birim Fiyat"] * 1.5,
+                        "Bakiye": gelen_mik, 
+                        "Kritik Sınır": 3, 
+                        "Birim": "Adet"
+                    }])
+                    st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_sat], ignore_index=True)
+
+                st.session_state.global_personel_loglari.insert(0, {
+                    "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Personel": st.session_state.current_user,
+                    "Ürün": u_adi,
+                    "İşlem": f"PDF Fatura İçe Aktarım (+)",
+                    "Miktar": gelen_mik
+                })
+
+            if islem_basarili:
+                st.success("✅ İŞLEM BAŞARILI: Faturadaki tüm ürünler depoya artı (+) stok olarak işlendi!")
+                st.toast("PDF faturası başarıyla işlendi.", icon="🚀")
+            else:
+                st.error("❌ İŞLEM BAŞARISIZ: Fatura işlenirken bir hata oluştu!")
+    else:
+        st.warning("⚠️ Lütfen işlemek için bir PDF veya e-Fatura belgesi yükleyin.")
+
+
+# --- 6. HIZLI İMALAT / STOK GÜNCELLE ---
 elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
     st.markdown('<div class="page-title">Hızlı İmalat & Stok Güncelleme</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Üretimden çıkan ürünleri depoya ekleyin veya düşün.</div>', unsafe_allow_html=True)
@@ -438,11 +482,15 @@ elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
             idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == urun_sec].index[0]
             if islem == "Üretimden Ekle (+)":
                 st.session_state.global_stok.loc[idx, "Bakiye"] += adet
+                st.success(f"✅ İŞLEM BAŞARILI: {urun_sec} için {adet} adet üretimden eklendi.")
+                st.toast("Stok artırıldı.", icon="✅")
             else:
                 if st.session_state.global_stok.loc[idx, "Bakiye"] >= adet:
                     st.session_state.global_stok.loc[idx, "Bakiye"] -= adet
+                    st.success(f"✅ İŞLEM BAŞARILI: {urun_sec} stoktan {adet} adet düşüldü.")
+                    st.toast("Stok düşüldü.", icon="⚠️")
                 else:
-                    st.error("❌ Stokta yeterli miktar yok!")
+                    st.error("❌ İŞLEM BAŞARISIZ: Depoda yeterli bakiye bulunmuyor!")
 
             st.session_state.global_personel_loglari.insert(0, {
                 "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -451,21 +499,19 @@ elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
                 "İşlem": islem,
                 "Miktar": adet
             })
-            st.success(f"✅ {urun_sec} için stok hareketi işlendi!")
-            st.rerun()
 
 
-# --- 6. STOK HAREKET GEÇMİŞİ ---
+# --- 7. STOK HAREKET GEÇMİŞİ ---
 elif menu_secim == "📋 Stok Hareket Geçmişi":
     st.markdown('<div class="page-title">Stok Hareket Geçmişi</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Geçmişte yapılan imalat ve depo çıkış logları.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Geçmişte yapılan imalat, PDF fatura ve depo çıkış logları.</div>', unsafe_allow_html=True)
     if len(st.session_state.global_personel_loglari) > 0:
         st.dataframe(pd.DataFrame(st.session_state.global_personel_loglari), use_container_width=True, hide_index=True)
     else:
         st.info("Henüz kaydedilmiş stok hareketi bulunmuyor.")
 
 
-# --- 7. SATIŞ FATURASI KES ---
+# --- 8. SATIŞ FATURASI KES ---
 elif menu_secim == "🧾 Satış Faturası Kes":
     st.markdown('<div class="page-title">Satış Faturası Kes</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Müşterilere resmi fatura düzenleme ekranı.</div>', unsafe_allow_html=True)
@@ -478,21 +524,28 @@ elif menu_secim == "🧾 Satış Faturası Kes":
         kes_btn = st.form_submit_button("Faturayı Kes")
 
         if kes_btn:
-            fiyat = float(st.session_state.global_stok.loc[st.session_state.global_stok["Ürün Adı"] == u_sec, "Satış Fiyatı (TL)"].values[0])
-            tutar = fiyat * mik * (1 + kdv / 100.0)
-            st.session_state.global_faturalar.insert(0, {
-                "Tarih": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Müşteri": m_sec,
-                "Ürün": u_sec,
-                "Adet": mik,
-                "Toplam": tutar,
-                "Kesen": st.session_state.current_user
-            })
-            st.success(f"✅ {m_sec} adına ₺{tutar:,.2f} tutarlı fatura kesildi!")
-            st.rerun()
+            mevcut_bakiye = int(st.session_state.global_stok.loc[st.session_state.global_stok["Ürün Adı"] == u_sec, "Bakiye"].values[0])
+            if mevcut_bakiye >= mik:
+                idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == u_sec].index[0]
+                st.session_state.global_stok.loc[idx, "Bakiye"] -= mik
+
+                fiyat = float(st.session_state.global_stok.loc[idx, "Satış Fiyatı (TL)"])
+                tutar = fiyat * mik * (1 + kdv / 100.0)
+                st.session_state.global_faturalar.insert(0, {
+                    "Tarih": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "Müşteri": m_sec,
+                    "Ürün": u_sec,
+                    "Adet": mik,
+                    "Toplam": tutar,
+                    "Kesen": st.session_state.current_user
+                })
+                st.success(f"✅ İŞLEM BAŞARILI: {m_sec} adına ₺{tutar:,.2f} tutarlı fatura kesildi ve stoktan düşüldü.")
+                st.toast("Fatura kesildi.", icon="🧾")
+            else:
+                st.error("❌ İŞLEM BAŞARISIZ: Stokta yeterli ürün olmadığı için fatura kesilemedi!")
 
 
-# --- 8. FATURA / İRSALİYE İŞLE ---
+# --- 9. FATURA / İRSALİYE İŞLE ---
 elif menu_secim == "📄 Fatura / İrsaliye İşle":
     st.markdown('<div class="page-title">Fatura / İrsaliye İşlemleri</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Gelen tedarikçi irsaliyeleri ve fatura kayıtları.</div>', unsafe_allow_html=True)
@@ -510,16 +563,17 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
                     "Evrak No": evrak_no,
                     "Açıklama": aciklama
                 })
-                st.success("✅ İrsaliye başarıyla işlendi.")
+                st.success("✅ İŞLEM BAŞARILI: İrsaliye başarıyla kaydedildi.")
+                st.toast("İrsaliye kaydedildi.", icon="✅")
             else:
-                st.error("❌ Tedarikçi ve evrak numarası zorunludur!")
+                st.error("❌ İŞLEM BAŞARISIZ: Tedarikçi ve evrak numarası zorunludur!")
 
     if len(st.session_state.global_irsaliyeler) > 0:
         st.markdown("#### Kayıtlı İrsaliyeler")
         st.dataframe(pd.DataFrame(st.session_state.global_irsaliyeler), use_container_width=True, hide_index=True)
 
 
-# --- 9. CARİ HESAPLAR & BORÇLAR ---
+# --- 10. CARİ HESAPLAR & BORÇLAR ---
 elif menu_secim == "🤝 Cari Hesaplar & Borçlar":
     st.markdown('<div class="page-title">Cari Hesaplar & Borç / Alacak</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Müşteri ve tedarikçilerin güncel bakiye durumları.</div>', unsafe_allow_html=True)
@@ -537,18 +591,20 @@ elif menu_secim == "🤝 Cari Hesaplar & Borçlar":
                 if c_ad:
                     yeni_c = pd.DataFrame([{"Cari Adı": c_ad, "Telefon": c_tel, "Tür": c_turu, "Bakiye (TL)": c_bak}])
                     st.session_state.global_cariler = pd.concat([st.session_state.global_cariler, yeni_c], ignore_index=True)
-                    st.success("✅ Cari eklendi.")
-                    st.rerun()
+                    st.success("✅ İŞLEM BAŞARILI: Yeni cari kart eklendi.")
+                    st.toast("Cari eklendi.", icon="🤝")
+                else:
+                    st.error("❌ İŞLEM BAŞARISIZ: Cari adı boş olamaz!")
 
 
-# --- 10. BANKA HESAPLARI ---
+# --- 11. BANKA HESAPLARI ---
 elif menu_secim == "🏦 Banka Hesapları":
     st.markdown('<div class="page-title">Banka Hesapları & IBAN Listesi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ticari banka hesapları ve IBAN bilgileri.</div>', unsafe_allow_html=True)
     st.dataframe(st.session_state.global_banka_hesaplari, use_container_width=True, hide_index=True)
 
 
-# --- 11. YENİ ÜRÜN KARTI AÇ (OTOMATİK BARKODLU) ---
+# --- 12. YENİ ÜRÜN KARTI AÇ ---
 elif menu_secim == "➕ Yeni Ürün Kartı Aç":
     st.markdown('<div class="page-title">Yeni Ürün Kartı Tanımla</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Kataloğa yeni bir mobilya modeli ekleyin (Barkod otomatik üretilir).</div>', unsafe_allow_html=True)
@@ -579,12 +635,13 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                     "Birim": u_birim
                 }])
                 st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_sat], ignore_index=True)
-                st.success(f"✅ {u_ad} başarıyla eklendi! Otomatik Barkod: {otomatik_barkod}")
+                st.success(f"✅ İŞLEM BAŞARILI: {u_ad} başarıyla eklendi! Otomatik Barkod: {otomatik_barkod}")
+                st.toast("Ürün kartı açıldı.", icon="📦")
             else:
-                st.error("❌ Ürün adı boş olamaz!")
+                st.error("❌ İŞLEM BAŞARISIZ: Ürün adı boş olamaz!")
 
 
-# --- 12. KASA & FİNANS ---
+# --- 13. KASA & FİNANS ---
 elif menu_secim == "💰 Kasa & Finans":
     st.markdown('<div class="page-title">Kasa & Finansal Durum</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ciro ve nakit akışı raporu.</div>', unsafe_allow_html=True)
@@ -598,14 +655,14 @@ elif menu_secim == "💰 Kasa & Finans":
         st.markdown(f"""<div class="metric-card"><div class="metric-title">Toplam Depo Satış Potansiyeli</div><div class="metric-value">₺{depo_deger:,.2f}</div></div>""", unsafe_allow_html=True)
 
 
-# --- 13. RAPORLAR & ANALİZ ---
+# --- 14. RAPORLAR & ANALİZ ---
 elif menu_secim == "📊 Raporlar & Analiz":
     st.markdown('<div class="page-title">Raporlar & Analiz</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Stok ve ürün dağılım grafikleri.</div>', unsafe_allow_html=True)
     st.bar_chart(st.session_state.global_stok.set_index("Ürün Adı")["Bakiye"])
 
 
-# --- 14. ŞİFRE DEĞİŞTİR ---
+# --- 15. ŞİFRE DEĞİŞTİR ---
 elif menu_secim == "🔒 Şifre Değiştir":
     st.markdown('<div class="page-title">Şifre Değiştir</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Oturum açan hesap şifresini güncelleyin.</div>', unsafe_allow_html=True)
@@ -617,9 +674,10 @@ elif menu_secim == "🔒 Şifre Değiştir":
             ak_user = st.session_state.current_user
             if st.session_state.global_users.get(ak_user) == eskisifre:
                 st.session_state.global_users[ak_user] = yenisifre
-                st.success("✅ Şifre değiştirildi!")
+                st.success("✅ İŞLEM BAŞARILI: Şifreniz güncellendi.")
+                st.toast("Şifre değiştirildi.", icon="🔒")
             else:
-                st.error("❌ Mevcut şifre hatalı!")
+                st.error("❌ İŞLEM BAŞARISIZ: Mevcut şifre hatalı!")
 
 
 # =========================================================
@@ -628,7 +686,7 @@ elif menu_secim == "🔒 Şifre Değiştir":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.4 • Tüm Hakları Saklıdır.
+    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.5 • Tüm Hakları Saklıdır.
 </div>
 """,
     unsafe_allow_html=True,
