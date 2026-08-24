@@ -7,7 +7,7 @@ import streamlit as st
 # 1. SAYFA YAPILANDIRMASI & MODERN KOYU TEMA STİLLERİ
 # =========================================================
 st.set_page_config(
-    page_title="Hayal Mobilya ERP & Stok Yönetimi v3.7",
+    page_title="Hayal Mobilya ERP & Stok Yönetimi v3.8",
     page_icon="🪑",
     layout="wide",
 )
@@ -54,7 +54,7 @@ st.markdown(
 )
 
 # =========================================================
-# 2. SESSION STATE (ORTAK GLOBAL VERİLER - TEK KAYNAK)
+# 2. SESSION STATE & URL PARAMETRELERİ (KALICI OTURUM)
 # =========================================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -64,6 +64,15 @@ if "user_role" not in st.session_state:
     st.session_state.user_role = ""
 if "sifremi_unuttum_mod" not in st.session_state:
     st.session_state.sifremi_unuttum_mod = False
+
+# URL parametrelerinde kayıtlı oturum kontrolü (Sayfa yenilense bile düşmemesi için)
+query_params = st.query_params
+if not st.session_state.logged_in and "user" in query_params:
+    saved_user = query_params["user"]
+    if saved_user in ["admin", "onur", "personel"]:  # Güvenli eşleşme kontrolü
+        st.session_state.logged_in = True
+        st.session_state.current_user = saved_user
+        st.session_state.user_role = "Admin" if saved_user in ["admin", "onur"] else "Personel"
 
 # Kullanıcı Veritabanı
 if "global_users" not in st.session_state:
@@ -173,7 +182,7 @@ if "global_personel_loglari" not in st.session_state:
 # =========================================================
 if not st.session_state.logged_in:
     st.markdown(
-        "<h2 style='text-align: center; color: #ffffff;'>🪑 Hayal Mobilya ERP v3.7 Giriş</h2>",
+        "<h2 style='text-align: center; color: #ffffff;'>🪑 Hayal Mobilya ERP v3.8 Giriş</h2>",
         unsafe_allow_html=True,
     )
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -183,7 +192,7 @@ if not st.session_state.logged_in:
             with st.form("login_form"):
                 kullanici_adi = st.text_input("Kullanıcı Adı")
                 sifre = st.text_input("Şifre", type="password")
-                beni_hatirla = st.checkbox("Beni Hatırla")
+                beni_hatirla = st.checkbox("Beni Hatırla (Oturumu Açık Tut)", value=True)
                 submit = st.form_submit_button("Sisteme Giriş Yap", use_container_width=True)
 
                 if submit:
@@ -196,8 +205,11 @@ if not st.session_state.logged_in:
                         st.session_state.user_role = (
                             "Admin" if kullanici_adi in ["admin", "onur"] else "Personel"
                         )
+                        
+                        # Eğer Beni Hatırla seçiliyse URL parametresine kaydet (Sayfa yenilense bile silinmez)
                         if beni_hatirla:
-                            st.toast("✅ Oturum bilgileriniz hatırlandı.", icon="ℹ️")
+                            st.query_params["user"] = kullanici_adi
+                        
                         st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
                         st.rerun()
                     else:
@@ -236,7 +248,7 @@ if not st.session_state.logged_in:
 # 4. SOL MENÜ
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
-st.sidebar.caption("ERP & STOK YÖNETİMİ v3.7")
+st.sidebar.caption("ERP & STOK YÖNETİMİ v3.8")
 st.sidebar.divider()
 
 st.sidebar.markdown("**MENÜ**")
@@ -275,6 +287,9 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.current_user = ""
     st.session_state.user_role = ""
+    # Çıkış yapıldığında kalıcı oturum verisini URL'den temizle
+    if "user" in st.query_params:
+        del st.query_params["user"]
     st.rerun()
 
 
@@ -484,7 +499,7 @@ elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
             })
 
 
-# --- 7. STOK HAREKET GEÇMİŞİ (ORTAK LOGLAR) ---
+# --- 7. STOK HAREKET GEÇMİŞİ ---
 elif menu_secim == "📋 Stok Hareket Geçmişi":
     st.markdown('<div class="page-title">Stok Hareket Geçmişi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Admin ve personel tarafından yapılan tüm imalat, manuel ekleme ve PDF fatura hareketleri.</div>', unsafe_allow_html=True)
@@ -524,7 +539,6 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                     "Kesen": st.session_state.current_user
                 })
                 
-                # Fatura kesimini de ortak log havuzuna ekle
                 st.session_state.global_personel_loglari.insert(0, {
                     "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "Personel": st.session_state.current_user,
@@ -630,7 +644,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                 }])
                 st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_sat], ignore_index=True)
                 
-                # Yeni ürün açılışını log havuzuna ekle
                 st.session_state.global_personel_loglari.insert(0, {
                     "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "Personel": st.session_state.current_user,
@@ -681,7 +694,7 @@ elif menu_secim == "🔒 Şifre Değiştir":
                 st.success("✅ İŞLEM BAŞARILI: Şifreniz güncellendi.")
                 st.toast("Şifre değiştirildi.", icon="🔒")
             else:
-                st.error("❌ İŞLEM BAŞARISIZ: Mevcut şifre hatalı!")
+                st.error("❌ İŞLEM BAŞARISIZ: Mevcut şifre hiç uyuşmuyor!")
 
 
 # =========================================================
@@ -690,7 +703,7 @@ elif menu_secim == "🔒 Şifre Değiştir":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.7 • Tüm Hakları Saklıdır.
+    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.8 • Tüm Hakları Saklıdır.
 </div>
 """,
     unsafe_allow_html=True,
