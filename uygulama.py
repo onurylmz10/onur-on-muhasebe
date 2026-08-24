@@ -450,7 +450,7 @@ st.markdown(
 # 1. YÖNETİCİ PANELİ
 # =========================================================
 
-elif menu_secim == "🔒 Yönetici Paneli":
+if menu_secim == "🔒 Yönetici Paneli":
     if not st.session_state.is_admin:
         st.error("Bu alana erişim yetkiniz bulunmuyor.")
         st.stop()
@@ -631,22 +631,25 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
             "İmalat Notu / Seri No", placeholder="Örn: 1. Etap Atölye Üretimi"
         )
 
-        if st.form_submit_button("💾 Stok Güncellemesini Kaydet"):
+        kaydet_imalat = st.form_submit_button("💾 Stok Güncellemesini Kaydet")
+
+        if kaydet_imalat:
             idx = st.session_state.stok[
                 st.session_state.stok["Ürün Adı"] == sec_urun
             ].index[0]
             mevcut = int(st.session_state.stok.loc[idx, "Bakiye"])
 
             if "Ekle" in islem_turu:
-                st.session_state.stok.loc[idx, "Bakiye"] += adet
+                st.session_state.stok.loc[idx, "Bakiye"] = mevcut + adet
                 islem_tip_str = "İmalat Girişi (+)"
             else:
                 if adet > mevcut:
                     st.error("Mevcut stoktan fazla düşüş yapılamaz!")
                     st.stop()
-                st.session_state.stok.loc[idx, "Bakiye"] -= adet
+                st.session_state.stok.loc[idx, "Bakiye"] = mevcut - adet
                 islem_tip_str = "İmalat/Fire Çıkışı (-)"
 
+            # Stok hareketini logla
             st.session_state.stok_hareketleri.insert(
                 0,
                 {
@@ -660,6 +663,7 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
             st.success(
                 f"✅ Başarılı! {sec_urun} için işlem işlendi. Yeni Bakiye: **{st.session_state.stok.loc[idx, 'Bakiye']}**"
             )
+            st.rerun()
 
 
 # =========================================================
@@ -722,7 +726,9 @@ elif menu_secim == "🧾 Satış Faturası Kes":
             "Satış Miktarı (Adet/Takım) *", min_value=1, step=1, value=1
         )
 
-        if st.form_submit_button("🚀 Faturayı Kes ve Onayla"):
+        satis_onay = st.form_submit_button("🚀 Faturayı Kes ve Onayla")
+
+        if satis_onay:
             idx = st.session_state.stok[
                 st.session_state.stok["Ürün Adı"] == s_urun
             ].index[0]
@@ -736,7 +742,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                     f"Yetersiz Stok! Depoda sadece {mevcut_stk} adet var."
                 )
             else:
-                st.session_state.stok.loc[idx, "Bakiye"] -= s_adet
+                st.session_state.stok.loc[idx, "Bakiye"] = mevcut_stk - s_adet
                 toplam_tutar = satis_fiyat * s_adet
                 kdv = toplam_tutar - (toplam_tutar / 1.20)
                 matrah = toplam_tutar - kdv
@@ -749,6 +755,18 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                     "Miktar": s_adet,
                     "Toplam": toplam_tutar,
                 })
+
+                # Stok hareketlerine de ekleyelim
+                st.session_state.stok_hareketleri.insert(
+                    0,
+                    {
+                        "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Personel": st.session_state.current_user,
+                        "Ürün": s_urun,
+                        "İşlem": "Satış Faturası (-)",
+                        "Miktar": s_adet,
+                    },
+                )
 
                 st.success(f"Fatura başarıyla oluşturuldu. No: {f_no}")
                 st.markdown(
@@ -804,16 +822,34 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
             "Ürün Seç", st.session_state.stok["Ürün Adı"].tolist()
         )
         mik = st.number_input("Adet", min_value=1, step=1)
-        if st.form_submit_button("Faturayı Onayla ve İşle"):
+        irsaliye_onay = st.form_submit_button("Faturayı Onayla ve İşle")
+
+        if irsaliye_onay:
             idx = st.session_state.stok[
                 st.session_state.stok["Ürün Adı"] == urun_sec
             ].index[0]
+            mevcut_bakiye = int(st.session_state.stok.loc[idx, "Bakiye"])
+            
             if "Artır" in tur:
-                st.session_state.stok.loc[idx, "Bakiye"] += mik
+                st.session_state.stok.loc[idx, "Bakiye"] = mevcut_bakiye + mik
+                islem_turu_str = "Alış Faturası Girişi (+)"
                 st.success("Stok başarıyla artırıldı.")
             else:
-                st.session_state.stok.loc[idx, "Bakiye"] -= mik
+                st.session_state.stok.loc[idx, "Bakiye"] = mevcut_bakiye - mik
+                islem_turu_str = "İade / Düşüm (-)"
                 st.success("Stok düşüldü.")
+
+            st.session_state.stok_hareketleri.insert(
+                0,
+                {
+                    "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Personel": st.session_state.current_user,
+                    "Ürün": urun_sec,
+                    "İşlem": islem_turu_str,
+                    "Miktar": mik,
+                },
+            )
+            st.rerun()
 
 
 # =========================================================
