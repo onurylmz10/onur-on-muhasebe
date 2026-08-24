@@ -148,7 +148,7 @@ else:
     st.rerun()
 
   # =========================================================
-  # MENÜ YÖNLENDİRMELERİ (TEKİR DÜZEN)
+  # 1. ANA SAYFA (ZENGİNLEŞTİRİLMİŞ ÖZET PANELİ)
   # =========================================================
   if menu_secim == "🏠 Ana Sayfa":
     st.markdown(
@@ -161,19 +161,66 @@ else:
         unsafe_allow_html=True,
     )
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-      st.metric("Toplam Ürün Çeşidi", len(st.session_state.global_stok))
-    with c2:
-      st.metric("Toplam Cari Hesap", len(st.session_state.global_cariler))
-    with c3:
+    # 1. Üst Metrik Kartları Satırı
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
       st.metric(
-          "Banka Hesap Sayısı", len(st.session_state.global_banka_hesaplari)
+          "📦 Toplam Ürün Çeşidi", len(st.session_state.global_stok)
+      )
+    with col2:
+      st.metric(
+          "👥 Toplam Cari Hesap", len(st.session_state.global_cariler)
+      )
+    with col3:
+      toplam_ciro = (
+          sum([f["Toplam"] for f in st.session_state.global_faturalar])
+          if len(st.session_state.global_faturalar) > 0
+          else 0.0
+      )
+      st.metric("💰 Toplam Ciro / Satış", f"₺{toplam_ciro:,.2f}")
+    with col4:
+      st.metric(
+          "🏦 Banka Hesap Sayısı",
+          len(st.session_state.global_banka_hesaplari),
       )
 
-    st.info(
-        "Sol menüyü kullanarak stok, cari hesaplar, bankalar ve finansal"
-        " raporlar arasında geçiş yapabilirsiniz."
+    st.markdown("---")
+
+    # 2. Orta Bölüm: Kritik Stoklar ve Hızlı Bilgiler
+    c_sol, c_sag = st.columns(2)
+
+    with c_sol:
+      st.markdown("#### ⚠️ Kritik Stok Seviyesindeki Ürünler")
+      df_stk = st.session_state.global_stok
+      # Kritik sınırın altında veya eşit olanları filtrele
+      kritik_df = df_stk[df_stk["Bakiye"] <= df_stk["Kritik Sınır"]]
+      if not kritik_df.empty:
+        st.dataframe(
+            kritik_df[["Ürün Adı", "Bakiye", "Kritik Sınır", "Birim"]],
+            use_container_width=True,
+            hide_index=True,
+        )
+      else:
+        st.success("✅ Kritik seviyede stok bulunan ürün bulunmuyor.")
+
+    with c_sag:
+      st.markdown("#### 📄 Son Kesilen Faturalar")
+      if len(st.session_state.global_faturalar) > 0:
+        df_fat = pd.DataFrame(st.session_state.global_faturalar)
+        st.dataframe(
+            df_fat.tail(5), use_container_width=True, hide_index=True
+        )
+      else:
+        st.info("Henüz kesilmiş bir fatura bulunmuyor.")
+
+    st.markdown("---")
+
+    # 3. Alt Bölüm: Hızlı Özet Bilgi Tablosu (Cari Bakiyeleri)
+    st.markdown("#### 👥 Son Eklenen veya Önemli Cari Hesaplar")
+    st.dataframe(
+        st.session_state.global_cariler.tail(5),
+        use_container_width=True,
+        hide_index=True,
     )
 
   elif menu_secim == "📦 Stok Yönetimi":
