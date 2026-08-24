@@ -183,8 +183,15 @@ textarea {
 
 
 # =========================================================
-# OTURUM VE VERİ YÖNETİMİ
+# OTURUM VE VERİ YÖNETİMİ (Kalıcı Oturum / Cookie Entegrasyonu)
 # =========================================================
+
+# Tarayıcı çerezleri veya kalıcı state kontrolü için query_params (url parametreleri tabanlı kalıcı oturum koruması)
+query_params = st.query_params
+if "auth_user" in query_params and "authenticated" not in st.session_state:
+    st.session_state.authenticated = True
+    st.session_state.current_user = query_params["auth_user"]
+    st.session_state.is_admin = query_params["auth_user"].lower() == "admin"
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -314,6 +321,7 @@ if not st.session_state.authenticated:
                     "Kullanıcı Seçin", list(st.session_state.users.keys()), key="giris_kullanici_sec"
                 )
                 k_sifre = st.text_input("Şifre", type="password", key="giris_sifre_input")
+                beni_hatirla = st.checkbox("Beni Hatırla (Sayfa Yenilense De Açık Kal)", value=True)
                 
                 giris_buton = st.form_submit_button("Güvenli Giriş Yap")
 
@@ -327,6 +335,9 @@ if not st.session_state.authenticated:
                         st.session_state.is_admin = (
                             secilen_kullanici.lower() == "admin"
                         )
+
+                        if beni_hatirla:
+                            st.query_params["auth_user"] = secilen_kullanici
 
                         st.session_state.personel_loglari.insert(
                             0,
@@ -363,6 +374,7 @@ if not st.session_state.authenticated:
                         st.session_state.current_user = s_kullanici
                         st.session_state.is_admin = (s_kullanici.lower() == "admin")
                         st.session_state.sifre_unuttum_aktif = False
+                        st.query_params["auth_user"] = s_kullanici
 
                         st.session_state.personel_loglari.insert(
                             0,
@@ -412,7 +424,7 @@ with st.sidebar:
         f"""
     <div class="sidebar-logo">
         <div class="brand">🪑 HAYAL MOBİLYA</div>
-        <div class="sub">ERP & STOK YÖNETİMİ v3.1</div>
+        <div class="sub">ERP & STOK YÖNETİMİ v3.2</div>
     </div>
     """,
         unsafe_allow_html=True,
@@ -437,6 +449,8 @@ with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚪 Güvenli Çıkış"):
         st.session_state.authenticated = False
+        if "auth_user" in st.query_params:
+            del st.query_params["auth_user"]
         st.rerun()
 
 
@@ -655,7 +669,6 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
                 st.session_state.stok.loc[idx, "Bakiye"] = mevcut - adet
                 islem_tip_str = "İmalat/Fire Çıkışı (-)"
 
-            # Stok hareketini anında logla
             st.session_state.stok_hareketleri.insert(
                 0,
                 {
@@ -1099,7 +1112,7 @@ elif menu_secim == "🔑 Şifre Değiştir":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.1 • Tüm Hakları Saklıdır.
+    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.2 • Tüm Hakları Saklıdır.
 </div>
 """,
     unsafe_allow_html=True,
