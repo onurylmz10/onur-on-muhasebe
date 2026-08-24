@@ -105,19 +105,15 @@ def auth_ekrani():
   col1, col2, col3 = st.columns([1, 2, 1])
 
   with col2:
-    # Tüm giriş/kayıt alanını şık bir çerçeve içine alıyoruz
     with st.container(border=True):
-      secim = st.radio(
-          "İşlem Seçin",
-          ["Giriş Yap", "Şifremi Unuttum", "Yeni Hesap Aç"],
-          horizontal=True,
+      # Radyo buton yerine sekmeler (tabs) kullanarak daha kullanıcı dostu bir alan oluşturuyoruz
+      tab_giris, tab_sifre, tab_kayit = st.tabs(
+          ["🔑 Oturum Aç", "🔄 Şifremi Unuttum", "➕ Yeni Hesap"]
       )
 
-      st.markdown("---")
-
-      if secim == "Giriş Yap":
+      with tab_giris:
+        st.markdown("<br>", unsafe_allow_html=True)
         with st.form("login_form"):
-          st.markdown("### Oturum Aç")
           k_adi = st.text_input("Kullanıcı Adı")
           sifre = st.text_input("Şifre", type="password")
           btn = st.form_submit_button("Giriş Yap", use_container_width=True)
@@ -132,9 +128,9 @@ def auth_ekrani():
             else:
               st.error("Kullanıcı adı veya şifre hatalı!")
 
-      elif secim == "Şifremi Unuttum":
+      with tab_sifre:
+        st.markdown("<br>", unsafe_allow_html=True)
         with st.form("sifre_unuttum_form"):
-          st.markdown("### Şifre Sıfırlama")
           k_adi = st.text_input("Kullanıcı Adı")
           yeni_sifre = st.text_input("Yeni Şifre", type="password")
           yeni_sifre_tekrar = st.text_input(
@@ -156,9 +152,9 @@ def auth_ekrani():
             else:
               st.error("❌ Bu kullanıcı adı sistemde bulunamadı!")
 
-      elif secim == "Yeni Hesap Aç":
+      with tab_kayit:
+        st.markdown("<br>", unsafe_allow_html=True)
         with st.form("yeni_hesap_form"):
-          st.markdown("### Yeni Kullanıcı Kaydı")
           y_kadi = st.text_input("Yeni Kullanıcı Adı")
           y_sifre = st.text_input("Şifre", type="password")
           y_sifre_tekrar = st.text_input("Şifre (Tekrar)", type="password")
