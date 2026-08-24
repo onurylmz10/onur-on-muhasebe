@@ -224,11 +224,10 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 if "users" not in st.session_state:
-    # Kullanıcılar ve şifreleri
+    # Varsayılan kullanıcılar (Admin ve standart personel)
     st.session_state.users = {"onur": "1234", "admin": "123456"}
 
 if "personel_loglari" not in st.session_state:
-    # Personel giriş-çıkış takip veritabanı (Simülasyon/Kayıt)
     st.session_state.personel_loglari = [
         {
             "Kullanıcı": "Admin",
@@ -275,7 +274,7 @@ if "faturalar" not in st.session_state:
 
 
 # =========================================================
-# GİRİŞ / ÜYE OL EKRANI (EĞER GİRİŞ YAPILMADIYSA)
+# GİRİŞ EKRANI (EĞER GİRİŞ YAPILMADIYSA)
 # =========================================================
 
 if not st.session_state.authenticated:
@@ -283,7 +282,7 @@ if not st.session_state.authenticated:
         """
         <div style="max-width: 450px; margin: 40px auto; text-align: center;">
             <h1 style="color: white; font-size: 28px; font-weight: 800;">🪑 HAYAL MOBİLYA</h1>
-            <p style="color: #7e899a; font-size: 13px;">Ön Muhasebe & Stok Takip Sistemi</p>
+            <p style="color: #7e899a; font-size: 13px;">Ön Muhasebe & Stok Takip Sistemi - Personel Giriş Paneli</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -291,77 +290,44 @@ if not st.session_state.authenticated:
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        tab_giris, tab_kayit = st.tabs(["🔑 Giriş Yap", "📝 Üye Ol"])
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.form("login_form"):
+            k_adi = st.text_input("Kullanıcı Adı")
+            k_sifre = st.text_input("Şifre", type="password")
+            giris_btn = st.form_submit_button("Sisteme Giriş Yap")
 
-        with tab_giris:
-            st.markdown("<br>", unsafe_allow_html=True)
-            with st.form("login_form"):
-                k_adi = st.text_input("Kullanıcı Adı")
-                k_sifre = st.text_input("Şifre", type="password")
-                giris_btn = st.form_submit_button("Sisteme Giriş Yap")
+            if giris_btn:
+                k_adi_clean = k_adi.strip().lower()
+                if (
+                    k_adi_clean in st.session_state.users
+                    and st.session_state.users[k_adi_clean] == k_sifre
+                ):
+                    st.session_state.authenticated = True
+                    st.session_state.current_user = k_adi.strip().capitalize()
 
-                if giris_btn:
-                    k_adi_clean = k_adi.strip().lower()
-                    if (
-                        k_adi_clean in st.session_state.users
-                        and st.session_state.users[k_adi_clean] == k_sifre
-                    ):
-                        st.session_state.authenticated = True
-                        st.session_state.current_user = (
-                            k_adi.strip().capitalize()
-                        )
-
-                        # Admin kontrolü
-                        if k_adi_clean == "admin":
-                            st.session_state.is_admin = True
-                        else:
-                            st.session_state.is_admin = False
-
-                        # Giriş logunu kaydet
-                        zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        st.session_state.personel_loglari.insert(
-                            0,
-                            {
-                                "Kullanıcı": st.session_state.current_user,
-                                "İşlem": "Giriş Yapıldı",
-                                "Zaman": zaman_str,
-                            },
-                        )
-
-                        st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
-                        st.rerun()
+                    # Admin kontrolü
+                    if k_adi_clean == "admin":
+                        st.session_state.is_admin = True
                     else:
-                        st.error(
-                            "❌ Hatalı kullanıcı adı veya şifre! Lütfen kontrol edin."
-                        )
+                        st.session_state.is_admin = False
 
-        with tab_kayit:
-            st.markdown("<br>", unsafe_allow_html=True)
-            with st.form("register_form"):
-                y_adi = st.text_input("Yeni Kullanıcı Adı (Personel)")
-                y_sifre = st.text_input("Şifre Belirleyin", type="password")
-                y_sifre_tekrar = st.text_input(
-                    "Şifre Tekrar", type="password"
-                )
-                kayit_btn = st.form_submit_button("Hesap Oluştur / Üye Ol")
+                    # Giriş logunu kaydet
+                    zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.session_state.personel_loglari.insert(
+                        0,
+                        {
+                            "Kullanıcı": st.session_state.current_user,
+                            "İşlem": "Giriş Yapıldı",
+                            "Zaman": zaman_str,
+                        },
+                    )
 
-                if kayit_btn:
-                    y_adi_clean = y_adi.strip().lower()
-                    if not y_adi_clean or not y_sifre:
-                        st.warning(
-                            "Lütfen kullanıcı adı ve şifre alanlarını doldurun."
-                        )
-                    elif y_sifre != y_s_ifre_tekrar if 'y_s_ifre_tekrar' in locals() else y_sifre != y_sifre_tekrar:
-                        st.error("❌ Girdiğiniz şifreler birbiriyle eşleşmiyor!")
-                    elif y_adi_clean in st.session_state.users:
-                        st.error(
-                            "❌ Bu kullanıcı adı zaten sistemde kayıtlı!"
-                        )
-                    else:
-                        st.session_state.users[y_adi_clean] = y_sifre
-                        st.success(
-                            "🎉 Üyelik başarıyla oluşturuldu! Şimdi 'Giriş Yap' sekmesinden giriş yapabilirsiniz."
-                        )
+                    st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
+                    st.rerun()
+                else:
+                    st.error(
+                        "❌ Hatalı kullanıcı adı veya şifre! Lütfen yöneticinizden bilgi alınız."
+                    )
 
     st.stop()  # Giriş yapılmadıysa uygulamanın geri kalanını çalıştırma
 
@@ -370,7 +336,6 @@ if not st.session_state.authenticated:
 # ANA UYGULAMA (GİRİŞ YAPILDIKTAN SONRA)
 # =========================================================
 
-# Personelin görebileceği menü listesini dinamik oluşturalım (Admin özel sekme içerir)
 menu_listesi = [
     "🏠 Dashboard",
     "📦 Ürünler",
@@ -387,7 +352,7 @@ menu_listesi = [
     "⚙️ Ayarlar",
 ]
 
-# Eğer giriş yapan kişi admin ise özel paneli ekle
+# Eğer giriş yapan kişi admin ise özel yönetici paneli menüye eklenir
 if st.session_state.is_admin:
     menu_listesi.insert(1, "🔒 Yönetici Paneli")
 
@@ -410,7 +375,9 @@ with st.sidebar:
 
     st.markdown("---")
 
-    rol_etiketi = "Sistem Yöneticisi" if st.session_state.is_admin else "Aktif Personel"
+    rol_etiketi = (
+        "Sistem Yöneticisi" if st.session_state.is_admin else "Aktif Personel"
+    )
     st.markdown(
         f"""
     <div style="
@@ -429,7 +396,6 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚪 Güvenli Çıkış"):
-        # Çıkış logu ekle
         zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         st.session_state.personel_loglari.insert(
             0,
@@ -488,43 +454,79 @@ if menu_secim == "🔒 Yönetici Paneli":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="page-subtitle">Personellerin sistem giriş/çıkış hareketlerini ve güvenlik loglarını buradan takip edebilirsiniz.</div>',
+        '<div class="page-subtitle">Personel hesaplarını yönetin ve sistem giriş/çıkış loglarını takip edin.</div>',
         unsafe_allow_html=True,
     )
 
-    c1, c2 = st.columns(2)
-    with c1:
+    # Sekmeler: Personel Ekleme / Log Takibi
+    tab_loglar, tab_personel_ekle = st.tabs([
+        "🕒 Personel Giriş/Çıkış Logları",
+        "➕ Yeni Personel Tanımla",
+    ])
+
+    with tab_loglar:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(
+                f"""
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-title">Toplam Kayıtlı Personel</div>
+                <div class="stat-value">{len(st.session_state.users)}</div>
+                <div class="stat-change">Aktif hesap sayısı</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+        with c2:
+            st.markdown(
+                f"""
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-title">Toplam Sistem Hareketi (Log)</div>
+                <div class="stat-value">{len(st.session_state.personel_loglari)}</div>
+                <div class="stat-change">Giriş/Çıkış kayıtları</div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
+
         st.markdown(
-            f"""
-        <div class="stat-card">
-            <div class="stat-icon">👥</div>
-            <div class="stat-title">Toplam Kayıtlı Personel</div>
-            <div class="stat-value">{len(st.session_state.users)}</div>
-            <div class="stat-change">Aktif hesap sayısı</div>
-        </div>
-        """,
+            '<div class="section-title">🕒 Personel Giriş - Çıkış Geçmişi</div>',
             unsafe_allow_html=True,
         )
-    with c2:
+        log_df = pd.DataFrame(st.session_state.personel_loglari)
+        st.dataframe(log_df, use_container_width=True, hide_index=True)
+
+    with tab_personel_ekle:
         st.markdown(
-            f"""
-        <div class="stat-card">
-            <div class="stat-icon">📋</div>
-            <div class="stat-title">Toplam Sistem Hareketi (Log)</div>
-            <div class="stat-value">{len(st.session_state.personel_loglari)}</div>
-            <div class="stat-change">Giriş/Çıkış kayıtları</div>
-        </div>
-        """,
+            '<div class="section-title">Yeni Personel Hesabı Oluştur</div>',
             unsafe_allow_html=True,
         )
+        with st.form("admin_yeni_personel_form"):
+             yeni_p_kullanici = st.text_input(
+                "Personel Kullanıcı Adı (Giriş için)"
+            )
+            yeni_p_sifre = st.text_input(
+                "Personel Şifresi Belirleyin", type="password"
+            )
+            personel_kayit_btn = st.form_submit_button(
+                "💾 Personel Hesabını Kaydet"
+            )
 
-    st.markdown(
-        '<div class="section-title">🕒 Personel Giriş - Çıkış Geçmişi</div>',
-        unsafe_allow_html=True,
-    )
-
-    log_df = pd.DataFrame(st.session_state.personel_loglari)
-    st.dataframe(log_df, use_container_width=True, hide_index=True)
+            if personel_kayit_btn:
+                p_clean = yeni_p_kullanici.strip().lower()
+                if not p_clean or not yeni_p_sifre:
+                    st.warning(
+                        "Lütfen kullanıcı adı ve şifre alanlarını boş bırakmayın."
+                    )
+                elif p_clean in st.session_state.users:
+                    st.error("❌ Bu kullanıcı adı zaten sistemde mevcut!")
+                else:
+                    st.session_state.users[p_clean] = yeni_p_sifre
+                    st.success(
+                        f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu! Artık bu bilgilerle sisteme giriş yapabilir."
+                    )
 
 
 # =========================================================
@@ -931,7 +933,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.4.0
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.5.0
 </div>
 """,
     unsafe_allow_html=True,
