@@ -148,7 +148,7 @@ else:
     st.rerun()
 
   # =========================================================
-  # 1. ANA SAYFA (ZENGİNLEŞTİRİLMİŞ ÖZET PANELİ)
+  # 1. ANA SAYFA (TÜM VERİLERİN LİSTELENDİĞİ GENEL PANEL)
   # =========================================================
   if menu_secim == "🏠 Ana Sayfa":
     st.markdown(
@@ -157,11 +157,11 @@ else:
     )
     st.markdown(
         '<div class="page-subtitle">Kurumsal ERP ve Operasyon Kontrol'
-        " Merkezi.</div>",
+        " Merkezi - Tüm Veri Özeti.</div>",
         unsafe_allow_html=True,
     )
 
-    # 1. Üst Metrik Kartları Satırı
+    # 1. Üst Metrik Kartları
     col1, col2, col3, col4 = st.columns(4)
     with col1:
       st.metric(
@@ -186,42 +186,44 @@ else:
 
     st.markdown("---")
 
-    # 2. Orta Bölüm: Kritik Stoklar ve Hızlı Bilgiler
-    c_sol, c_sag = st.columns(2)
-
-    with c_sol:
-      st.markdown("#### ⚠️ Kritik Stok Seviyesindeki Ürünler")
-      df_stk = st.session_state.global_stok
-      # Kritik sınırın altında veya eşit olanları filtrele
-      kritik_df = df_stk[df_stk["Bakiye"] <= df_stk["Kritik Sınır"]]
-      if not kritik_df.empty:
-        st.dataframe(
-            kritik_df[["Ürün Adı", "Bakiye", "Kritik Sınır", "Birim"]],
-            use_container_width=True,
-            hide_index=True,
-        )
-      else:
-        st.success("✅ Kritik seviyede stok bulunan ürün bulunmuyor.")
-
-    with c_sag:
-      st.markdown("#### 📄 Son Kesilen Faturalar")
-      if len(st.session_state.global_faturalar) > 0:
-        df_fat = pd.DataFrame(st.session_state.global_faturalar)
-        st.dataframe(
-            df_fat.tail(5), use_container_width=True, hide_index=True
-        )
-      else:
-        st.info("Henüz kesilmiş bir fatura bulunmuyor.")
+    # 2. Tüm Stok Listesi
+    st.markdown("#### 📦 Tüm Stok ve Envanter Listesi")
+    st.dataframe(
+        st.session_state.global_stok, use_container_width=True, hide_index=True
+    )
 
     st.markdown("---")
 
-    # 3. Alt Bölüm: Hızlı Özet Bilgi Tablosu (Cari Bakiyeleri)
-    st.markdown("#### 👥 Son Eklenen veya Önemli Cari Hesaplar")
+    # 3. Tüm Cari Hesaplar Listesi
+    st.markdown("#### 👥 Tüm Cari Hesaplar (Müşteri & Tedarikçiler)")
     st.dataframe(
-        st.session_state.global_cariler.tail(5),
+        st.session_state.global_cariler,
         use_container_width=True,
         hide_index=True,
     )
+
+    st.markdown("---")
+
+    # 4. Tüm Banka Hesapları Listesi
+    st.markdown("#### 🏦 Tüm Banka Hesapları ve IBAN Bilgileri")
+    st.dataframe(
+        st.session_state.global_banka_hesaplari,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("---")
+
+    # 5. Tüm Faturalar Listesi
+    st.markdown("#### 📄 Tüm Kesilen Satış Faturaları")
+    if len(st.session_state.global_faturalar) > 0:
+      st.dataframe(
+          pd.DataFrame(st.session_state.global_faturalar),
+          use_container_width=True,
+          hide_index=True,
+      )
+    else:
+      st.info("Kayıtlı fatura bulunmuyor.")
 
   elif menu_secim == "📦 Stok Yönetimi":
     st.markdown(
