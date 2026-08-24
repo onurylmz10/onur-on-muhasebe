@@ -191,11 +191,21 @@ textarea {
     text-align: center;
 }
 
+/* Mobil Menü Konteyner Stili */
+.mobile-nav-box {
+    background: #0d1117;
+    border: 1px solid #202630;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
 /* =====================================================
-   MOBİL
+   MOBİL ÖZEL AYARLAR
    ===================================================== */
 
 @media (max-width: 768px) {
+    /* Bilgisayar sidebar'ını gizle ama mobil menünün görünmesine izin ver */
     section[data-testid="stSidebar"] {
         display: none !important;
     }
@@ -330,7 +340,7 @@ if not st.session_state.authenticated:
 
 
 # =========================================================
-# ANA UYGULAMA
+# ANA UYGULAMA & MENÜLER
 # =========================================================
 
 menu_listesi = [
@@ -353,7 +363,7 @@ if st.session_state.is_admin:
     menu_listesi.insert(1, "🔒 Yönetici Paneli")
 
 
-# SIDEBAR
+# 1. DESKTOP SIDEBAR
 with st.sidebar:
     st.markdown(
         f"""
@@ -391,7 +401,7 @@ with st.sidebar:
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🚪 Güvenli Çıkış"):
+    if st.button("🚪 Güvenli Çıkış", key="desktop_cikis"):
         zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         st.session_state.personel_loglari.insert(
             0,
@@ -410,7 +420,7 @@ with st.sidebar:
 
 
 # =========================================================
-# ÜST BAR
+# ÜST BAR & MOBİL MENÜ KUTUSU
 # =========================================================
 
 st.markdown(
@@ -422,6 +432,19 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
+# Mobil cihazlar için üst kısıma pratik bir menü seçici ekliyoruz (Telefonda sidebar kapalı olduğu için buradan seçilecek)
+st.markdown(
+    '<div class="mobile-nav-box">📱 <b>Mobil Menü / Sayfa Değiştir</b></div>',
+    unsafe_allow_html=True,
+)
+mobil_menu_secim = st.selectbox(
+    "Gitmek İstediğiniz Sayfayı Seçin", menu_listesi, key="mobile_select"
+)
+
+# Eğer mobilden farklı bir menü seçildiyse onu aktif menü yap
+if mobil_menu_secim != menu_secim:
+    menu_secim = mobil_menu_secim
 
 
 # =========================================================
@@ -533,7 +556,7 @@ if menu_secim == "🔒 Yönetici Paneli":
                     st.success(
                         f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
                     )
-                    st.rerun()  # Sayfayı yenileyerek listeye hemen eklenmesini sağlar
+                    st.rerun()
 
     with tab_loglar:
         st.markdown(
@@ -948,7 +971,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.5.2
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.6.0
 </div>
 """,
     unsafe_allow_html=True,
