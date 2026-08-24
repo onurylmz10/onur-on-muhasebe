@@ -188,12 +188,13 @@ def auth_ekrani():
 if st.session_state.current_user is None:
   auth_ekrani()
 else:
-  # Kenar Çubuğu Menüsü
+  # Kenar Çubuğu Menüsü (Daha kullanışlı Radio buton tasarımı)
   st.sidebar.title("🛋️ Hayal Mobilya ERP")
-  st.sidebar.markdown(f"Kullanıcı: **{st.session_state.current_user}**")
+  st.sidebar.markdown(f"👤 Aktif Kullanıcı: **{st.session_state.current_user}**")
+  st.sidebar.markdown("---")
 
-  menu_secim = st.sidebar.selectbox(
-      "Menü",
+  menu_secim = st.sidebar.radio(
+      "Navigasyon Menüsü",
       [
           "🏠 Ana Sayfa",
           "📦 Stok Yönetimi",
@@ -207,7 +208,8 @@ else:
       ],
   )
 
-  if st.sidebar.button("Çıkış Yap"):
+  st.sidebar.markdown("---")
+  if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
     st.session_state.current_user = None
     if "user" in st.query_params:
       del st.query_params["user"]  # Çıkış yapıldığında kalıcı oturumu sil
