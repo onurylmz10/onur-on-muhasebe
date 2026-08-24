@@ -245,6 +245,10 @@ if "stok" not in st.session_state:
         },
     ])
 
+# GÜVENCE KONTROLÜ: Tabloda Kritik Sınır sütunu eksikse otomatik ekle
+if "Kritik Sınır" not in st.session_state.stok.columns:
+    st.session_state.stok["Kritik Sınır"] = 3
+
 if "cariler" not in st.session_state:
     st.session_state.cariler = pd.DataFrame([
         {
@@ -313,7 +317,7 @@ if not st.session_state.authenticated:
 
 
 # =========================================================
-# MENÜ YAPISI (EKSİKLER GİDERİLDİ)
+# MENÜ YAPISI
 # =========================================================
 
 menu_listesi = [
@@ -449,7 +453,7 @@ elif menu_secim == "🏠 Ana Sayfa":
     maliyet_toplam = (df_stok["Alış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
     satis_toplam = (df_stok["Satış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
 
-    # Kritik stok kontrolü (Her ürünün kendi kritik sınırına göre)
+    # Kritik stok kontrolü
     kritik_df = df_stok[df_stok["Bakiye"] <= df_stok["Kritik Sınır"]]
 
     c1, c2, c3, c4 = st.columns(4)
@@ -507,7 +511,7 @@ elif menu_secim == "🏠 Ana Sayfa":
 
 
 # =========================================================
-# 3. ÜRÜN KATALOĞU & STOK (EKSİK: Kritik sınır düzenleme eklendi)
+# 3. ÜRÜN KATALOĞU & STOK
 # =========================================================
 
 elif menu_secim == "📦 Ürün Kataloğu & Stok":
@@ -581,7 +585,6 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
                 st.session_state.stok.loc[idx, "Bakiye"] -= adet
                 islem_tip_str = "İmalat/Fire Çıkışı (-)"
 
-            # Stok hareketlerine kaydet (Eksik olan özellik eklendi)
             st.session_state.stok_hareketleri.insert(
                 0,
                 {
@@ -598,7 +601,7 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
 
 
 # =========================================================
-# 5. STOK HAREKET GEÇMİŞİ (EKSİK ÖZELLİK)
+# 5. STOK HAREKET GEÇMİŞİ
 # =========================================================
 
 elif menu_secim == "📊 Stok Hareket Geçmişi":
@@ -752,7 +755,7 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
 
 
 # =========================================================
-# 8. CARİ HESAPLAR (EKSİK ÖZELLİK EKLENDİ)
+# 8. CARİ HESAPLAR
 # =========================================================
 
 elif menu_secim == "👥 Cari Hesaplar & Borçlar":
@@ -871,24 +874,24 @@ elif menu_secim == "🔑 Şifre Değiştir":
         unsafe_allow_html=True,
     )
     with st.form("sifre_form_degis"):
-         eski = st.text_input("Mevcut Şifre", type="password")
-         yeni1 = st.text_input("Yeni Şifre", type="password")
-         yeni2 = st.text_input("Yeni Şifre Tekrar", type="password")
-         if st.form_submit_button("Şifreyi Güncelle"):
-             if (
-                 st.session_state.current_user in st.session_state.users
-                 and st.session_state.users[st.session_state.current_user]
-                 == eski
-             ):
-                 if yeni1 and yeni1 == yeni2:
-                     st.session_state.users[
-                         st.session_state.current_user
-                     ] = yeni1
-                     st.success("Şifreniz başarıyla değiştirildi.")
-                 else:
-                     st.warning("Yeni şifreler uyuşmuyor.")
-             else:
-                 st.error("Mevcut şifre hatalı.")
+        eski = st.text_input("Mevcut Şifre", type="password")
+        yeni1 = st.text_input("Yeni Şifre", type="password")
+        yeni2 = st.text_input("Yeni Şifre Tekrar", type="password")
+        if st.form_submit_button("Şifreyi Güncelle"):
+            if (
+                st.session_state.current_user in st.session_state.users
+                and st.session_state.users[st.session_state.current_user]
+                == eski
+            ):
+                if yeni1 and yeni1 == yeni2:
+                    st.session_state.users[
+                        st.session_state.current_user
+                    ] = yeni1
+                    st.success("Şifreniz başarıyla değiştirildi.")
+                else:
+                    st.warning("Yeni şifreler uyuşmuyor.")
+            else:
+                st.error("Mevcut şifre hatalı.")
 
 
 # =========================================================
