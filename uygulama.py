@@ -12,8 +12,24 @@ st.set_page_config(
     layout="wide",
 )
 
+st.markdown(
+    """
+    <style>
+    .main { background-color: #f8f9fa; }
+    .page-title { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 5px; }
+    .page-subtitle { font-size: 14px; color: #64748b; margin-bottom: 20px; }
+    .stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0.1,0.1,0.1); border-left: 4px solid #3b82f6; }
+    .stat-title { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 5px; }
+    .stat-change { font-size: 12px; color: #10b981; margin-top: 5px; }
+    .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
 # =========================================================
-# 2. SESSION STATE (ORTAK/GLOBAL OTURUM VERİLERİ)
+# 2. SESSION STATE (OTURUM & ORTAK GLOBAL VERİLER)
 # =========================================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -32,32 +48,41 @@ if "global_users" not in st.session_state:
         "personel": "0000",
     }
 
-# Ortak Stok Veritabanı (Tüm personeller aynı veriyi görür)
+# Stok Veritabanı (Tüm personeller ortak görür)
 if "global_stok" not in st.session_state:
     st.session_state.global_stok = pd.DataFrame(
         [
             {
-                "Ürün Adı": "Prag Yemek Masası Seti",
-                "Barkod": "8690456765456",
-                "Alış Fiyatı (TL)": 8000.0,
-                "Satış Fiyatı (TL)": 12500.0,
-                "Bakiye": 4,
-                "Kritik Sınır": 2,
+                "Ürün Adı": "Viyana Köşe Koltuk Takımı",
+                "Barkod": "8690011223344",
+                "Alış Fiyatı (TL)": 12000.0,
+                "Satış Fiyatı (TL)": 18500.0,
+                "Bakiye": 8,
+                "Kritik Sınır": 3,
                 "Birim": "Takım",
             },
             {
-                "Ürün Adı": "Royal Yatak Odası Dolabı",
-                "Barkod": "8690654389765",
-                "Alış Fiyatı (TL)": 11000.0,
-                "Satış Fiyatı (TL)": 16000.0,
-                "Bakiye": 3,
-                "Kritik Sınır": 3,
+                "Ürün Adı": "Milano Yemek Masası (6 Kişilik)",
+                "Barkod": "8690055667788",
+                "Alış Fiyatı (TL)": 6500.0,
+                "Satış Fiyatı (TL)": 9900.0,
+                "Bakiye": 4,
+                "Kritik Sınır": 2,
                 "Birim": "Adet",
+            },
+            {
+                "Ürün Adı": "Liva Zigon Sehpa Seti",
+                "Barkod": "8690099887766",
+                "Alış Fiyatı (TL)": 1500.0,
+                "Satış Fiyatı (TL)": 2750.0,
+                "Bakiye": 12,
+                "Kritik Sınır": 5,
+                "Birim": "Set",
             },
         ]
     )
 
-# Ortak Cari Veritabanı
+# Cari Veritabanı
 if "global_cariler" not in st.session_state:
     st.session_state.global_cariler = pd.DataFrame(
         [
@@ -76,7 +101,7 @@ if "global_cariler" not in st.session_state:
         ]
     )
 
-# Banka Hesapları
+# Banka Hesapları Veritabanı
 if "global_banka_hesaplari" not in st.session_state:
     st.session_state.global_banka_hesaplari = pd.DataFrame(
         [
@@ -86,10 +111,18 @@ if "global_banka_hesaplari" not in st.session_state:
                 "Hesap Adı": "Ticari Vadesiz TL",
                 "IBAN": "TR33 0001 0012 3456 7890 1234 56",
                 "Döviz": "TL",
-            }
+            },
+            {
+                "Banka Adı": "Garanti BBVA",
+                "Şube / Kod": "Edremit Kurumsal / 567",
+                "Hesap Adı": "Ticari Döviz Hesabı",
+                "IBAN": "TR62 0006 2000 1234 5678 9012 34",
+                "Döviz": "USD",
+            },
         ]
     )
 
+# Fatura & Log Listeleri
 if "global_faturalar" not in st.session_state:
     st.session_state.global_faturalar = []
 if "global_stok_hareketleri" not in st.session_state:
@@ -99,7 +132,7 @@ if "global_personel_loglari" not in st.session_state:
 
 
 # =========================================================
-# 3. KULLANICI GİRİŞ & ŞİFREMİ UNUTTUM EKRANI
+# 3. KULLANICI GİRİŞ (LOGIN) & ŞİFREMİ UNUTTUM EKRANI
 # =========================================================
 if not st.session_state.logged_in:
     st.markdown(
@@ -123,9 +156,9 @@ if not st.session_state.logged_in:
                         st.session_state.logged_in = True
                         st.session_state.current_user = kullanici_adi
                         st.session_state.user_role = (
-                            "Sistem Yöneticisi" if kullanici_adi in ["admin", "onur"] else "Personel"
+                            "Admin" if kullanici_adi in ["admin", "onur"] else "Personel"
                         )
-                        st.success("✅ Giriş başarılı!")
+                        st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
                         st.rerun()
                     else:
                         st.error("❌ Hatalı kullanıcı adı veya şifre!")
@@ -135,66 +168,61 @@ if not st.session_state.logged_in:
                 st.rerun()
         else:
             st.markdown("#### 🔄 Şifre Sıfırlama Paneli")
+            st.info("Kayıtlı kullanıcı adınızı girin ve sistem yöneticisi onaylı geçici şifre oluşturun.")
+            
             with st.form("sifremi_unuttum_form"):
                 unutulan_user = st.text_input("Kullanıcı Adınız")
-                admin_onay_sifre = st.text_input("Admin Şifresi", type="password")
-                yeni_gecici_sifre = st.text_input("Yeni Şifre", type="password")
+                admin_onay_sifre = st.text_input("Yönetici (Admin) Şifresi", type="password")
+                yeni_gecici_sifre = st.text_input("Yeni Şifreniz", type="password")
                 
                 sifirla_btn = st.form_submit_button("Şifreyi Sıfırla", use_container_width=True)
-                geri_don_btn = st.form_submit_button("Geri Dön", use_container_width=True)
+                geri_don_btn = st.form_submit_button("Giriş Ekranına Geri Dön", use_container_width=True)
 
                 if sifirla_btn:
                     if unutulan_user in st.session_state.global_users:
-                        if admin_onay_sifre in [st.session_state.global_users.get("admin"), st.session_state.global_users.get("onur")]:
+                        if admin_onay_sifre == st.session_state.global_users.get("admin") or admin_onay_sifre == st.session_state.global_users.get("onur"):
                             if yeni_gecici_sifre:
                                 st.session_state.global_users[unutulan_user] = yeni_gecici_sifre
-                                st.success("✅ Şifre başarıyla güncellendi!")
+                                st.success(f"✅ '{unutulan_user}' kullanıcısının şifresi başarıyla güncellendi!")
                                 st.session_state.sifremi_unuttum_mod = False
                                 st.rerun()
                             else:
                                 st.error("❌ Yeni şifre boş olamaz!")
                         else:
-                            st.error("❌ Yönetici şifresi hatalı!")
+                            st.error("❌ Yönetici (Admin) şifresi hatalı!")
                     else:
-                        st.error("❌ Kullanıcı bulunamadı!")
+                        st.error("❌ Böyle bir kullanıcı adı bulunamadı!")
 
                 if geri_don_btn:
                     st.session_state.sifremi_unuttum_mod = False
                     st.rerun()
+
     st.stop()
 
 
 # =========================================================
-# 4. SOL MENÜ & NAVİGASYON (Görselinizdeki Sıralama)
+# 4. SOL MENÜ & NAVİGASYON (ESKİ LİSTE)
 # =========================================================
-st.sidebar.markdown(f"### 🪑 HAYAL MOBİLYA")
-st.sidebar.caption("ERP & STOK YÖNETİMİ v3.4")
+st.sidebar.markdown(f"### 👤 Oturum: **{st.session_state.current_user}**")
+st.sidebar.caption(f"Rol: {st.session_state.user_role}")
 st.sidebar.divider()
 
 menu_secim = st.sidebar.radio(
-    "MENÜ",
+    "Ana Menü",
     [
-        "Ana Sayfa",
-        "Yönetici Paneli",
-        "Ürün Kataloğu & Stok",
-        "Hızlı İmalat / Stok Güncelle",
-        "Stok Hareket Geçmişi",
-        "Satış Faturası Kes",
-        "Fatura / İrsaliye İşle",
-        "Cari Hesaplar & Borçlar",
-        "Banka Hesapları",
-        "Yeni Ürün Kartı Aç",
-        "Kasa & Finans",
-        "Raporlar & Analiz",
-        "Şifre Değiştir",
+        "🏠 Ana Sayfa & Dashboard",
+        "📦 Stok & Depo Yönetimi",
+        "🧾 Satış & Fatura Kes",
+        "👥 Cari Hesaplar & Borçlar",
+        "🏦 Banka Hesapları",
+        "➕ Yeni Ürün Kartı Aç",
+        "💰 Kasa & Finans",
+        "📊 Raporlar & Analiz",
+        "🔑 Şifre Değiştir",
     ],
 )
 
-st.sidebar.divider()
-st.sidebar.markdown(f"👤 **{st.session_state.current_user.capitalize()}**")
-st.sidebar.caption(f"{st.session_state.user_role}")
-
-if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
+if st.sidebar.button("🚪 Oturumu Kapat", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.current_user = ""
     st.session_state.user_role = ""
@@ -204,232 +232,469 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 # =========================================================
 # 5. ANA SAYFA & DASHBOARD
 # =========================================================
-if menu_secim == "Ana Sayfa":
-    st.markdown("### Kontrol Paneli (Dashboard)")
-    st.caption("İmalat ve stok performansının genel özeti.")
+if menu_secim == "🏠 Ana Sayfa & Dashboard":
+    st.markdown(
+        '<div class="page-title">🏠 Hayal Mobilya Yönetim Paneli</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Üretim, stok ve finansal operasyonların genel görünümü.</div>',
+        unsafe_allow_html=True,
+    )
 
     toplam_urun_cesidi = len(st.session_state.global_stok)
     toplam_stok_miktari = st.session_state.global_stok["Bakiye"].sum()
-    toplam_maliyet_degeri = (st.session_state.global_stok["Alış Fiyatı (TL)"] * st.session_state.global_stok["Bakiye"]).sum()
-    
-    kritik_df = st.session_state.global_stok[
-        st.session_state.global_stok["Bakiye"] <= st.session_state.global_stok["Kritik Sınır"]
-    ]
-    kritik_urun_sayisi = len(kritik_df)
+    toplam_cari_sayisi = len(st.session_state.global_cariler)
+    kritik_urun_sayisi = len(
+        st.session_state.global_stok[
+            st.session_state.global_stok["Bakiye"]
+            <= st.session_state.global_stok["Kritik Sınır"]
+        ]
+    )
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("ÜRÜN ÇEŞİDİ", toplam_urun_cesidi, "Aktif Katalog")
-    with c2:
-        st.metric("TOPLAM STOK ADEDİ", int(toplam_stok_miktari), "Ürün Miktarı")
-    with c3:
-        st.metric("STOK MALİYET DEĞERİ", f"₺{toplam_maliyet_degeri:,.0f}", "Yatırım Tutarı")
-    with c4:
-        st.metric("KRİTİK STOK UYARI", kritik_urun_sayisi, "Acil Üretim Gereken", delta_color="inverse")
-
-    st.markdown("#### 🚨 Kritik Eşikteki Ürünler")
-    if not kritik_df.empty:
-        st.dataframe(kritik_df, use_container_width=True, hide_index=True)
-    else:
-        st.success("Kritik seviyede ürün bulunmuyor.")
-
-
-# =========================================================
-# 6. YÖNETİCİ PANELİ
-# =========================================================
-elif menu_secim == "Yönetici Paneli":
-    st.markdown("### ⚙️ Sistem Yönetici Paneli")
-    st.caption("Kullanıcı yetkileri ve genel sistem ayarları.")
-    st.write("Kayıtlı Kullanıcılar:", list(st.session_state.global_users.keys()))
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(
+            f"""<div class="stat-card"><div class="stat-title">Ürün Çeşidi</div><div class="stat-value">{toplam_urun_cesidi}</div></div>""",
+            unsafe_allow_html=True,
+        )
+    with col2:
+        st.markdown(
+            f"""<div class="stat-card"><div class="stat-title">Toplam Adet</div><div class="stat-value">{toplam_stok_miktari}</div></div>""",
+            unsafe_allow_html=True,
+        )
+    with col3:
+        st.markdown(
+            f"""<div class="stat-card"><div class="stat-title">Cari / Müşteri</div><div class="stat-value">{toplam_cari_sayisi}</div></div>""",
+            unsafe_allow_html=True,
+        )
+    with col4:
+        st.markdown(
+            f"""<div class="stat-card" style="border-left-color: #ef4444;"><div class="stat-title">Kritik Stok</div><div class="stat-value">{kritik_urun_sayisi}</div></div>""",
+            unsafe_allow_html=True,
+        )
 
 
 # =========================================================
-# 7. ÜRÜN KATALOĞU & STOK
+# 6. STOK & DEPO YÖNETİMİ
 # =========================================================
-elif menu_secim == "Ürün Kataloğu & Stok":
-    st.markdown("### 📦 Ürün Kataloğu ve Genel Stok")
-    st.dataframe(st.session_state.global_stok, use_container_width=True, hide_index=True)
+elif menu_secim == "📦 Stok & Depo Yönetimi":
+    st.markdown(
+        '<div class="page-title">📦 Stok & Depo Envanter Yönetimi</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Depodaki mevcut mobilya ve malzeme stok seviyeleri (Tüm personeller ortak görür).</div>',
+        unsafe_allow_html=True,
+    )
 
+    st.dataframe(
+        st.session_state.global_stok, use_container_width=True, hide_index=True
+    )
 
-# =========================================================
-# 8. HIZLI İMALAT / STOK GÜNCELLE
-# =========================================================
-elif menu_secim == "Hızlı İmalat / Stok Güncelle":
-    st.markdown("### ⚡ Hızlı İmalat & Stok Miktar Güncelleme")
-    with st.form("hizli_stok_form"):
-        secilen_urun = st.selectbox("Ürün Seç", st.session_state.global_stok["Ürün Adı"].tolist())
+    st.markdown("#### 🔄 Hızlı Stok Miktar Güncelleme")
+    with st.form("stok_Guncelle_form"):
+        secilen_urun = st.selectbox(
+            "Ürün Seç", st.session_state.global_stok["Ürün Adı"].tolist()
+        )
         islem_tipi = st.selectbox("İşlem", ["Stok Ekle (+)", "Stok Düş (-)"])
         miktar = st.number_input("Miktar", min_value=1, step=1, value=1)
         guncelle_btn = st.form_submit_button("Stok Hareketi İşle")
 
         if guncelle_btn:
-            idx = st.session_state.global_stok[st.session_state.global_stok["Ürün Adı"] == secilen_urun].index[0]
+            idx = st.session_state.global_stok[
+                st.session_state.global_stok["Ürün Adı"] == secilen_urun
+            ].index[0]
             if islem_tipi == "Stok Ekle (+)":
                 st.session_state.global_stok.loc[idx, "Bakiye"] += miktar
             else:
                 if st.session_state.global_stok.loc[idx, "Bakiye"] >= miktar:
                     st.session_state.global_stok.loc[idx, "Bakiye"] -= miktar
                 else:
-                    st.error("❌ Stokta yeterli miktar yok!")
+                    st.error("❌ Stokta yeterli miktar bulunmuyor!")
 
-            st.session_state.global_stok_hareketleri.insert(0, {
-                "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Personel": st.session_state.current_user,
-                "Ürün": secilen_urun,
-                "İşlem": islem_tipi,
-                "Miktar": miktar
-            })
-            st.success(f"✅ {secilen_urun} güncellendi. Tüm personeller artık bu güncel stoğu görebilir!")
+            st.session_state.global_personel_loglari.insert(
+                0,
+                {
+                    "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Personel": st.session_state.current_user,
+                    "Ürün": secilen_urun,
+                    "İşlem": islem_tipi,
+                    "Miktar": miktar,
+                },
+            )
+            st.success(f"✅ {secilen_urun} stok hareketi işlendi ve tüm personellere yansıtıldı!")
             st.rerun()
 
 
 # =========================================================
-# 9. STOK HAREKET GEÇMİŞİ
+# 7. SATIŞ & FATURA KES
 # =========================================================
-elif menu_secim == "Stok Hareket Geçmişi":
-    st.markdown("### 📜 Stok Hareket Geçmişi")
-    if len(st.session_state.global_stok_hareketleri) > 0:
-        st.dataframe(pd.DataFrame(st.session_state.global_stok_hareketleri), use_container_width=True, hide_index=True)
-    else:
-        st.info("Henüz stok hareketi kaydedilmedi.")
+elif menu_secim == "🧾 Satış & Fatura Kes":
+    st.markdown(
+        '<div class="page-title">🧾 Satış Faturası Kesme Modülü</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Müşterileriniz adına resmi fatura düzenleyin.</div>',
+        unsafe_allow_html=True,
+    )
 
-
-# =========================================================
-# 10. SATIŞ FATURASI KES
-# =========================================================
-elif menu_secim == "Satış Faturası Kes":
-    st.markdown("### 🧾 Satış Faturası Kesme Modülü")
     with st.form("fatura_form"):
-        f_cari = st.selectbox("Müşteri / Cari", st.session_state.global_cariler["Cari Adı"].tolist())
-        f_urun = st.selectbox("Ürün", st.session_state.global_stok["Ürün Adı"].tolist())
-        f_adet = st.number_input("Adet", min_value=1, value=1)
-        kes_btn = st.form_submit_button("Fatura Kes")
+        f_cari = st.selectbox(
+            "Cari / Müşteri Seç", st.session_state.global_cariler["Cari Adı"].tolist()
+        )
+        f_urun = st.selectbox(
+            "Ürün Seç", st.session_state.global_stok["Ürün Adı"].tolist()
+        )
+        f_adet = st.number_input("Satış Adedi", min_value=1, step=1, value=1)
+        f_kdv = st.selectbox("KDV Oranı", [20, 10, 1])
 
-        if kes_btn:
-            fiyat = float(st.session_state.global_stok.loc[st.session_state.global_stok["Ürün Adı"] == f_urun, "Satış Fiyatı (TL)"].values[0])
-            toplam = fiyat * f_adet
-            st.session_state.global_faturalar.append({
+        fatura_kes_btn = st.form_submit_button("Faturayı Oluştur & Kes")
+
+        if fatura_kes_btn:
+            birim_fiyat = float(
+                st.session_state.global_stok.loc[
+                    st.session_state.global_stok["Ürün Adı"] == f_urun,
+                    "Satış Fiyatı (TL)",
+                ].values[0]
+            )
+            tutar_kdvsiz = birim_fiyat * f_adet
+            kdv_tutar = tutar_kdvsiz * (f_kdv / 100.0)
+            toplam_tutar = tutar_kdvsiz + kdv_tutar
+
+            yeni_fatura = {
                 "Tarih": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Müşteri": f_cari,
                 "Ürün": f_urun,
                 "Adet": f_adet,
-                "Toplam": toplam,
-                "Kesen": st.session_state.current_user
-            })
-            st.success(f"✅ Fatura kesildi! Tutar: ₺{toplam:,.2f}")
+                "Toplam": toplam_tutar,
+                "Kesen": st.session_state.current_user,
+            }
+            st.session_state.global_faturalar.append(yeni_fatura)
+            st.success(
+                f"✅ {f_cari} adına ₺{toplam_tutar:,.2f} tutarlı fatura başarıyla kesildi!"
+            )
 
 
 # =========================================================
-# 11. FATURA / İRSALİYE İŞLE
+# 8. CARİ HESAPLAR & BORÇLAR
 # =========================================================
-elif menu_secim == "Fatura / İrsaliye İşle":
-    st.markdown("### 📄 Fatura & İrsaliye Arşivi")
-    if len(st.session_state.global_faturalar) > 0:
-        st.dataframe(pd.DataFrame(st.session_state.global_faturalar), use_container_width=True, hide_index=True)
-    else:
-        st.info("Kayıtlı fatura bulunmuyor.")
+elif menu_secim == "👥 Cari Hesaplar & Borçlar":
+    st.markdown(
+        '<div class="page-title">👥 Cari Hesaplar & Borç / Alacak Takibi</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Müşteri ve tedarikçilerinizin finansal bakiye durumları.</div>',
+        unsafe_allow_html=True,
+    )
 
+    col_c1, col_c2 = st.columns([2, 1])
+    with col_c1:
+        st.dataframe(
+            st.session_state.global_cariler,
+            use_container_width=True,
+            hide_index=True,
+        )
 
-# =========================================================
-# 12. CARİ HESAPLAR & BORÇLAR
-# =========================================================
-elif menu_secim == "Cari Hesaplar & Borçlar":
-    st.markdown("### 👥 Cari Hesaplar & Borç / Alacak")
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.dataframe(st.session_state.global_cariler, use_container_width=True, hide_index=True)
-    with col2:
-        with st.form("yeni_cari"):
-            c_adi = st.text_input("Cari Adı")
-            c_tel = st.text_input("Telefon")
-            c_tur = st.selectbox("Tür", ["Müşteri", "Tedarikçi"])
-            c_bak = st.number_input("Bakiye", value=0.0)
-            if st.form_submit_button("Cari Ekle"):
+    with col_c2:
+        st.markdown("#### ➕ Yeni Cari Kart Ekle")
+        with st.form("yeni_cari_form"):
+            c_adi = st.text_input("Cari / Firma Adı")
+            c_tel = st.text_input("Telefon Numarası")
+            c_tur = st.selectbox("Cari Türü", ["Müşteri", "Tedarikçi"])
+            c_bakiye = st.number_input(
+                "Başlangıç Bakiyesi (TL)", value=0.0, step=100.0
+            )
+
+            cari_kaydet = st.form_submit_button("Cari Kartı Oluştur")
+            if cari_kaydet:
                 if c_adi:
-                    yeni_c = pd.DataFrame([{"Cari Adı": c_adi, "Telefon": c_tel, "Tür": c_tur, "Bakiye (TL)": c_bak}])
-                    st.session_state.global_cariler = pd.concat([st.session_state.global_cariler, yeni_c], ignore_index=True)
-                    st.success("✅ Cari eklendi!")
+                    yeni_cari_satir = pd.DataFrame(
+                        [
+                            {
+                                "Cari Adı": c_adi,
+                                "Telefon": c_tel,
+                                "Tür": c_tur,
+                                "Bakiye (TL)": c_bakiye,
+                            }
+                        ]
+                    )
+                    st.session_state.global_cariler = pd.concat(
+                        [st.session_state.global_cariler, yeni_cari_satir],
+                        ignore_index=True,
+                    )
+                    st.success(f"✅ {c_adi} cari listesine başarıyla eklendi.")
                     st.rerun()
+                else:
+                    st.error("❌ Cari adı boş olamaz!")
 
 
 # =========================================================
-# 13. BANKA HESAPLARI
+# 9. BANKA HESAPLARI
 # =========================================================
-elif menu_secim == "Banka Hesapları":
-    st.markdown("### 🏦 Banka Hesapları & IBAN")
-    st.dataframe(st.session_state.global_banka_hesaplari, use_container_width=True, hide_index=True)
+elif menu_secim == "🏦 Banka Hesapları":
+    st.markdown(
+        '<div class="page-title">🏦 Banka Hesapları & IBAN Yönetimi</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Şirket ticari hesapları, şube bilgileri ve IBAN listesi.</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.dataframe(
+        st.session_state.global_banka_hesaplari,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("#### ➕ Yeni Banka Hesabı Tanımla")
+    with st.form("banka_ekle_form"):
+        b_adi = st.text_input("Banka Adı (Örn: Yapı Kredi)")
+        b_sube = st.text_input("Şube / Kod")
+        b_hesap = st.text_input("Hesap Adı")
+        b_iban = st.text_input("IBAN Numarası", placeholder="TR...")
+        b_doviz = st.selectbox("Döviz Cinsi", ["TL", "EUR", "USD"])
+
+        banka_kayit_btn = st.form_submit_button("Banka Hesabını Kaydet")
+        if banka_kayit_btn:
+            if b_adi and b_iban:
+                yeni_banka = pd.DataFrame(
+                    [
+                        {
+                            "Banka Adı": b_adi,
+                            "Şube / Kod": b_sube,
+                            "Hesap Adı": b_hesap,
+                            "IBAN": b_iban,
+                            "Döviz": b_doviz,
+                        }
+                    ]
+                )
+                st.session_state.global_banka_hesaplari = pd.concat(
+                    [st.session_state.global_banka_hesaplari, yeni_banka],
+                    ignore_index=True,
+                )
+                st.success("✅ Banka hesabı başarıyla eklendi.")
+                st.rerun()
+            else:
+                st.error("❌ Banka adı ve IBAN alanları zorunludur!")
 
 
 # =========================================================
-# 14. YENİ ÜRÜN KARTI AÇ
+# 10. YENİ ÜRÜN KARTI AÇ
 # =========================================================
-elif menu_secim == "Yeni Ürün Kartı Aç":
-    st.markdown("### ➕ Yeni Ürün Kartı Tanımlama")
+elif menu_secim == "➕ Yeni Ürün Kartı Aç":
+    st.markdown(
+        '<div class="page-title">➕ Yeni Ürün & Mobilya Kartı Tanımlama</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Kataloğa yeni bir ürün ekleyin ve tüm personellerin görmesini sağlayın.</div>',
+        unsafe_allow_html=True,
+    )
+
     with st.form("yeni_urun_form"):
-        u_ad = st.text_input("Ürün Adı")
-        u_barkod = st.text_input("Barkod", value=str(random.randint(8690000000000, 8699999999999)))
-        u_alis = st.number_input("Alış Fiyatı (TL)", value=5000.0)
-        u_satis = st.number_input("Satış Fiyatı (TL)", value=8500.0)
-        u_bak = st.number_input("Başlangıç Stok Adedi", min_value=0, value=5)
-        u_kritik = st.number_input("Kritik Sınır", min_value=1, value=2)
-        u_birim = st.selectbox("Birim", ["Takım", "Adet", "Set"])
+        col_u1, col_u2 = st.columns(2)
+        with col_u1:
+            u_ad = st.text_input(
+                "Ürün Adı *", placeholder="Örn: Viyana Köşe Koltuk"
+            )
+            u_alis = st.number_input(
+                "Alış / Maliyet Fiyatı (TL)", min_value=0.0, step=100.0, value=5000.0
+            )
+            u_satis = st.number_input(
+                "Satış Fiyatı (TL)", min_value=0.0, step=100.0, value=8500.0
+            )
+        with col_u2:
+            u_barkod = st.text_input(
+                "Barkod",
+                value=str(random.randint(8690000000000, 8699999999999)),
+            )
+            u_bakiye = st.number_input(
+                "Başlangıç Stok Miktarı", min_value=0, step=1, value=5
+            )
+            u_kritik = st.number_input(
+                "Kritik Stok Sınırı", min_value=1, step=1, value=3
+            )
+            u_birim = st.selectbox("Birim", ["Takım", "Adet", "Metre", "Set"])
 
-        if st.form_submit_button("Ürünü Kataloğa Kaydet"):
-            if u_ad:
-                yeni_u = pd.DataFrame([{
-                    "Ürün Adı": u_ad,
-                    "Barkod": u_barkod,
-                    "Alış Fiyatı (TL)": u_alis,
-                    "Satış Fiyatı (TL)": u_satis,
-                    "Bakiye": u_bak,
-                    "Kritik Sınır": u_kritik,
-                    "Birim": u_birim
-                }])
-                st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_u], ignore_index=True)
-                st.success("✅ Ürün başarıyla eklendi! Artık tüm personeller bu ürünü görebilir.")
+        yeni_urun_onay = st.form_submit_button("💾 Ürünü Kataloğa Kaydet")
+
+        if yeni_urun_onay:
+            if not u_ad:
+                st.error("❌ Ürün adı boş bırakılamaz!")
             else:
-                st.error("❌ Ürün adı boş olamaz!")
+                yeni_satir = pd.DataFrame(
+                    [
+                        {
+                            "Ürün Adı": u_ad,
+                            "Barkod": u_barkod,
+                            "Alış Fiyatı (TL)": u_alis,
+                            "Satış Fiyatı (TL)": u_satis,
+                            "Bakiye": u_bakiye,
+                            "Kritik Sınır": u_kritik,
+                            "Birim": u_birim,
+                        }
+                    ]
+                )
+                st.session_state.global_stok = pd.concat(
+                    [st.session_state.global_stok, yeni_satir], ignore_index=True
+                )
+
+                st.session_state.global_stok_hareketleri.insert(
+                    0,
+                    {
+                        "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "Personel": st.session_state.current_user,
+                        "Ürün": u_ad,
+                        "İşlem": "Yeni Ürün Kartı Açıldı",
+                        "Miktar": u_bakiye,
+                    },
+                )
+                st.success(f"✅ {u_ad} başarıyla sisteme tanımlandı ve tüm personellerin listesine eklendi!")
 
 
 # =========================================================
-# 15. KASA & FİNANS
+# 11. KASA & FİNANS
 # =========================================================
-elif menu_secim == "Kasa & Finans":
-    st.markdown("### 💰 Kasa & Finansal Durum")
-    toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if st.session_state.global_faturalar else 0.0
-    st.metric("Toplam Fatura Cirosu", f"₺{toplam_ciro:,.2f}")
+elif menu_secim == "💰 Kasa & Finans":
+    st.markdown(
+        '<div class="page-title">💰 Kasa & Finansal Durum Özeti</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Şirket nakit akışı, toplam ciro ve finansal varlık dağılımı.</div>',
+        unsafe_allow_html=True,
+    )
+
+    toplam_faturalandirilan = (
+        sum([f["Toplam"] for f in st.session_state.global_faturalar])
+        if len(st.session_state.global_faturalar) > 0
+        else 0.0
+    )
+    toplam_maliyet = (
+        st.session_state.global_stok["Alış Fiyatı (TL)"]
+        * st.session_state.global_stok["Bakiye"]
+    ).sum()
+    toplam_satis_potansiyel = (
+        st.session_state.global_stok["Satış Fiyatı (TL)"]
+        * st.session_state.global_stok["Bakiye"]
+    ).sum()
+
+    kf1, kf2, kf3 = st.columns(3)
+    with kf1:
+        st.markdown(
+            f"""<div class="stat-card">
+                <div class="stat-title">Toplam Fatura Cirosu</div>
+                <div class="stat-value">₺{toplam_faturalandirilan:,.2f}</div>
+                <div class="stat-change">Gerçekleşen Satışlar</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with kf2:
+        st.markdown(
+            f"""<div class="stat-card">
+                <div class="stat-title">Stok Toplam Maliyeti</div>
+                <div class="stat-value">₺{toplam_maliyet:,.2f}</div>
+                <div class="stat-change">Yatırım Değeri</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with kf3:
+        st.markdown(
+            f"""<div class="stat-card">
+                <div class="stat-title">Depo Satış Potansiyeli</div>
+                <div class="stat-value">₺{toplam_satis_potansiyel:,.2f}</div>
+                <div class="stat-change">Beklenen Ciro</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("#### 🧾 Kesilen Son Faturalar Listesi")
+    if len(st.session_state.global_faturalar) > 0:
+        st.dataframe(
+            pd.DataFrame(st.session_state.global_faturalar),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.info("Henüz kesilmiş bir satış faturası bulunmuyor.")
 
 
 # =========================================================
-# 16. RAPORLAR & ANALİZ
+# 12. RAPORLAR & ANALİZ
 # =========================================================
-elif menu_secim == "Raporlar & Analiz":
-    st.markdown("### 📊 Raporlar & Analiz")
-    st.bar_chart(st.session_state.global_stok.set_index("Ürün Adı")["Bakiye"])
+elif menu_secim == "📊 Raporlar & Analiz":
+    st.markdown(
+        '<div class="page-title">📊 Raporlar & İleri Düzey Analiz</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Üretim, stok dağılımı ve operasyonel performans raporları.</div>',
+        unsafe_allow_html=True,
+    )
+
+    tab_r1, tab_r2 = st.tabs(
+        ["📦 Kategori & Stok Dağılımı", "👥 Personel İşlem Raporu"]
+    )
+
+    with tab_r1:
+        st.markdown("#### Ürün Bazlı Stok Seviyeleri")
+        st.bar_chart(st.session_state.global_stok.set_index("Ürün Adı")["Bakiye"])
+
+    with tab_r2:
+        st.markdown("#### Personel Aktivite Özeti")
+        if len(st.session_state.global_personel_loglari) > 0:
+            df_log = pd.DataFrame(st.session_state.global_personel_loglari)
+            st.dataframe(df_log, use_container_width=True, hide_index=True)
+        else:
+            st.info("Personel log kaydı bulunmuyor.")
 
 
 # =========================================================
-# 17. ŞİFRE DEĞİŞTİR
+# 13. ŞİFRE DEĞİŞTİR
 # =========================================================
-elif menu_secim == "Şifre Değiştir":
-    st.markdown("### 🔑 Şifre Değiştir")
-    with st.form("sifre_form"):
+elif menu_secim == "🔑 Şifre Değiştir":
+    st.markdown(
+        '<div class="page-title">🔑 Kullanıcı Şifre Değiştirme</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Oturum açan hesap için güvenlik şifresini güncelleyin.</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.form("sifre_degis_form"):
         eskisifre = st.text_input("Mevcut Şifre", type="password")
-        yenisifre = st.text_input("Yeni Şifre", type="password")
-        if st.form_submit_button("Güncelle"):
-            user = st.session_state.current_user
-            if st.session_state.global_users.get(user) == eskisifre:
-                st.session_state.global_users[user] = yenisifre
-                st.success("✅ Şifre değiştirildi!")
+        yenisifre1 = st.text_input("Yeni Şifre", type="password")
+        yenisifre2 = st.text_input("Yeni Şifre (Tekrar)", type="password")
+
+        sifre_guncelle_btn = st.form_submit_button("Şifreyi Güncelle")
+
+        if sifre_guncelle_btn:
+            aktif_kullanici = st.session_state.current_user
+            if st.session_state.global_users.get(aktif_kullanici) == eskisifre:
+                if yenisifre1 and yenisifre1 == yenisifre2:
+                    st.session_state.global_users[aktif_kullanici] = yenisifre1
+                    st.success("✅ Şifreniz başarıyla değiştirildi!")
+                else:
+                    st.error(
+                        "❌ Yeni şifreler boş olamaz ve birbiriyle uyuşmalıdır!"
+                    )
             else:
-                st.error("❌ Mevcut şifre hatalı!")
+                st.error("❌ Mevcut şifrenizi hatalı girdiniz!")
 
 
 # =========================================================
 # ALT BİLGİ (FOOTER)
 # =========================================================
-st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: #94a3b8; font-size: 12px;'>© 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.4 • Tüm Hakları Saklıdır.</div>",
+    """
+<div class="footer">
+    Hayal Mobilya Kurumsal ERP & Stok Yönetim Sistemi • Edremit Üretim Tesisi © 2026
+</div>
+""",
     unsafe_allow_html=True,
 )
