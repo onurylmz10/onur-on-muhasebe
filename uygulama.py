@@ -269,7 +269,7 @@ if "faturalar" not in st.session_state:
 
 
 # =========================================================
-# GİRİŞ EKRANI (SELECTBOX İLE KARIŞIKLIĞA SON)
+# GİRİŞ EKRANI (FORM HATALARINI ÖNLEYEN YAPI)
 # =========================================================
 
 if not st.session_state.authenticated:
@@ -286,42 +286,39 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        with st.form("login_form"):
-            # Kullanıcı adını serbest metin yerine listeden seçtirerek tarayıcı hatasını tamamen önlüyoruz
-            kullanici_listesi = list(st.session_state.users.keys())
-            secilen_kullanici = st.selectbox(
-                "Kullanıcı Seçin", kullanıcı_listesi
-            )
-            k_sifre = st.text_input("Şifre", type="password")
-            giris_btn = st.form_submit_button("Sisteme Giriş Yap")
 
-            if giris_btn:
-                if (
-                    secilen_kullanici in st.session_state.users
-                    and st.session_state.users[secilen_kullanici] == k_sifre
-                ):
-                    st.session_state.authenticated = True
-                    st.session_state.current_user = secilen_kullanici
+        kullanici_listesi = list(st.session_state.users.keys())
+        secilen_kullanici = st.selectbox("Kullanıcı Seçin", kullanıcı_listesi)
+        k_sifre = st.text_input("Şifre", type="password")
+        giris_btn = st.button("Sisteme Giriş Yap")
 
-                    if secilen_kullanici.lower() == "admin":
-                        st.session_state.is_admin = True
-                    else:
-                        st.session_state.is_admin = False
+        if giris_btn:
+            if (
+                secilen_kullanici in st.session_state.users
+                and st.session_state.users[secilen_kullanici] == k_sifre
+            ):
+                st.session_state.authenticated = True
+                st.session_state.current_user = secilen_kullanici
 
-                    zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    st.session_state.personel_loglari.insert(
-                        0,
-                        {
-                            "Kullanıcı": st.session_state.current_user,
-                            "İşlem": "Giriş Yapıldı",
-                            "Zaman": zaman_str,
-                        },
-                    )
-
-                    st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
-                    st.rerun()
+                if secilen_kullanici.lower() == "admin":
+                    st.session_state.is_admin = True
                 else:
-                    st.error("❌ Hatalı şifre! Lütfen şifrenizi kontrol edin.")
+                    st.session_state.is_admin = False
+
+                zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                st.session_state.personel_loglari.insert(
+                    0,
+                    {
+                        "Kullanıcı": st.session_state.current_user,
+                        "İşlem": "Giriş Yapıldı",
+                        "Zaman": zaman_str,
+                    },
+                )
+
+                st.success("✅ Giriş başarılı! Yönlendiriliyorsunuz...")
+                st.rerun()
+            else:
+                st.error("❌ Hatalı şifre! Lütfen şifrenizi kontrol edin.")
 
     st.stop()
 
