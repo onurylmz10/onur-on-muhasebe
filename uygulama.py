@@ -282,3 +282,49 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+# =========================================================
+# 8. CARİ HESAPLAR (DÜZELTİLMİŞ)
+# =========================================================
+
+if menu_secim == "👥 Cari Hesaplar & Borçlar":
+    st.markdown(
+        '<div class="page-title">👥 Cari Hesaplar & Borç / Alacak Takibi</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Müşteri ve tedarikçilerinizin finansal bakiye durumları.</div>',
+        unsafe_allow_html=True,
+    )
+
+    col_c1, col_c2 = st.columns([2, 1])
+    with col_c1:
+        st.dataframe(
+            st.session_state.global_cariler,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    with col_c2:
+        st.markdown("#### ➕ Yeni Cari Kart Ekle")
+        with st.form("yeni_cari_form"):
+            c_adi = st.text_input("Cari / Firma Adı")
+            c_tel = st.text_input("Telefon Numarası")
+            c_tur = st.selectbox("Cari Türü", ["Müşteri", "Tedarikçi"])
+            c_bakiye = st.number_input("Başlangıç Bakiyesi (TL)", value=0.0, step=100.0)
+            
+            cari_kaydet = st.form_submit_button("Cari Kartı Oluştur")
+            if cari_kaydet:
+                if c_adi:
+                    yeni_cari_satir = pd.DataFrame([{
+                        "Cari Adı": c_adi,
+                        "Telefon": c_tel,
+                        "Tür": c_tur,
+                        "Bakiye (TL)": c_bakiye
+                    }])
+                    st.session_state.global_cariler = pd.concat(
+                        [st.session_state.global_cariler, yeni_cari_satir], ignore_index=True
+                    )
+                    st.success(f"✅ {c_adi} cari listesine başarıyla eklendi.")
+                    st.rerun()
+                else:
+                    st.error("❌ Cari adı boş olamaz!")
