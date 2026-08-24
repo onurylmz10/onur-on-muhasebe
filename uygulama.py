@@ -95,9 +95,6 @@ if "global_faturalar" not in st.session_state:
       {"Fatura No": "FTR-2026-001", "Müşteri": "Ahşap Dünyası Ltd.", "Toplam": 12500.0}
   ]
 
-if "auth_mode" not in st.session_state:
-  st.session_state.auth_mode = "Giriş Yap"
-
 
 # Giriş ve Kimlik Doğrulama Ekranı
 def auth_ekrani():
@@ -108,77 +105,80 @@ def auth_ekrani():
   col1, col2, col3 = st.columns([1, 2, 1])
 
   with col2:
-    secim = st.radio(
-        "İşlem Seçin",
-        ["Giriş Yap", "Şifremi Unuttum", "Yeni Hesap Aç"],
-        horizontal=True,
-        label_visibility="collapsed",
-    )
+    # Tüm giriş/kayıt alanını şık bir çerçeve içine alıyoruz
+    with st.container(border=True):
+      secim = st.radio(
+          "İşlem Seçin",
+          ["Giriş Yap", "Şifremi Unuttum", "Yeni Hesap Aç"],
+          horizontal=True,
+      )
 
-    if secim == "Giriş Yap":
-      with st.form("login_form"):
-        st.markdown("### Oturum Aç")
-        k_adi = st.text_input("Kullanıcı Adı")
-        sifre = st.text_input("Şifre", type="password")
-        btn = st.form_submit_button("Giriş Yap", use_container_width=True)
-        if btn:
-          if (
-              k_adi in st.session_state.global_users
-              and st.session_state.global_users[k_adi] == sifre
-          ):
-            st.session_state.current_user = k_adi
-            st.success("Giriş başarılı!")
-            st.rerun()
-          else:
-            st.error("Kullanıcı adı veya şifre hatalı!")
+      st.markdown("---")
 
-    elif secim == "Şifremi Unuttum":
-      with st.form("sifre_unuttum_form"):
-        st.markdown("### Şifre Sıfırlama")
-        k_adi = st.text_input("Kullanıcı Adı")
-        yeni_sifre = st.text_input("Yeni Şifre", type="password")
-        yeni_sifre_tekrar = st.text_input(
-            "Yeni Şifre (Tekrar)", type="password"
-        )
-        sifre_sifirla_btn = st.form_submit_button(
-            "Şifreyi Sıfırla", use_container_width=True
-        )
-
-        if sifre_sifirla_btn:
-          if k_adi in st.session_state.global_users:
-            if yeni_sifre and yeni_sifre == yeni_sifre_tekrar:
-              st.session_state.global_users[k_adi] = yeni_sifre
-              st.success(
-                  "✅ Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz."
-              )
+      if secim == "Giriş Yap":
+        with st.form("login_form"):
+          st.markdown("### Oturum Aç")
+          k_adi = st.text_input("Kullanıcı Adı")
+          sifre = st.text_input("Şifre", type="password")
+          btn = st.form_submit_button("Giriş Yap", use_container_width=True)
+          if btn:
+            if (
+                k_adi in st.session_state.global_users
+                and st.session_state.global_users[k_adi] == sifre
+            ):
+              st.session_state.current_user = k_adi
+              st.success("Giriş başarılı!")
+              st.rerun()
             else:
-              st.error("❌ Yeni şifreler boş olamaz ve uyuşmalıdır!")
-          else:
-            st.error("❌ Bu kullanıcı adı sistemde bulunamadı!")
+              st.error("Kullanıcı adı veya şifre hatalı!")
 
-    elif secim == "Yeni Hesap Aç":
-      with st.form("yeni_hesap_form"):
-        st.markdown("### Yeni Kullanıcı Kaydı")
-        y_kadi = st.text_input("Yeni Kullanıcı Adı")
-        y_sifre = st.text_input("Şifre", type="password")
-        y_sifre_tekrar = st.text_input("Şifre (Tekrar)", type="password")
-        kayit_btn = st.form_submit_button(
-            "Hesap Oluştur", use_container_width=True
-        )
+      elif secim == "Şifremi Unuttum":
+        with st.form("sifre_unuttum_form"):
+          st.markdown("### Şifre Sıfırlama")
+          k_adi = st.text_input("Kullanıcı Adı")
+          yeni_sifre = st.text_input("Yeni Şifre", type="password")
+          yeni_sifre_tekrar = st.text_input(
+              "Yeni Şifre (Tekrar)", type="password"
+          )
+          sifre_sifirla_btn = st.form_submit_button(
+              "Şifreyi Sıfırla", use_container_width=True
+          )
 
-        if kayit_btn:
-          if not y_kadi:
-            st.error("❌ Kullanıcı adı boş olamaz!")
-          elif y_kadi in st.session_state.global_users:
-            st.error("❌ Bu kullanıcı adı zaten alınmış!")
-          elif not y_sifre or y_sifre != y_sifre_tekrar:
-            st.error("❌ Şifreler boş olamaz ve uyuşmalıdır!")
-          else:
-            st.session_state.global_users[y_kadi] = y_sifre
-            st.success(
-                "✅ Hesabınız başarıyla oluşturuldu! Şimdi giriş"
-                " yapabilirsiniz."
-            )
+          if sifre_sifirla_btn:
+            if k_adi in st.session_state.global_users:
+              if yeni_sifre and yeni_sifre == yeni_sifre_tekrar:
+                st.session_state.global_users[k_adi] = yeni_sifre
+                st.success(
+                    "✅ Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz."
+                )
+              else:
+                st.error("❌ Yeni şifreler boş olamaz ve uyuşmalıdır!")
+            else:
+              st.error("❌ Bu kullanıcı adı sistemde bulunamadı!")
+
+      elif secim == "Yeni Hesap Aç":
+        with st.form("yeni_hesap_form"):
+          st.markdown("### Yeni Kullanıcı Kaydı")
+          y_kadi = st.text_input("Yeni Kullanıcı Adı")
+          y_sifre = st.text_input("Şifre", type="password")
+          y_sifre_tekrar = st.text_input("Şifre (Tekrar)", type="password")
+          kayit_btn = st.form_submit_button(
+              "Hesap Oluştur", use_container_width=True
+          )
+
+          if kayit_btn:
+            if not y_kadi:
+              st.error("❌ Kullanıcı adı boş olamaz!")
+            elif y_kadi in st.session_state.global_users:
+              st.error("❌ Bu kullanıcı adı zaten alınmış!")
+            elif not y_sifre or y_sifre != y_sifre_tekrar:
+              st.error("❌ Şifreler boş olamaz ve uyuşmalıdır!")
+            else:
+              st.session_state.global_users[y_kadi] = y_sifre
+              st.success(
+                  "✅ Hesabınız başarıyla oluşturuldu! Şimdi giriş"
+                  " yapabilirsiniz."
+              )
 
 
 # Oturum Kontrolü
