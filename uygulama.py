@@ -178,15 +178,6 @@ textarea {
     text-align: center;
 }
 
-/* Mobil Menü Konteyner Stili */
-.mobile-nav-box {
-    background: #0d1117;
-    border: 1px solid #202630;
-    padding: 10px 15px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-}
-
 @media (max-width: 768px) {
     section[data-testid="stSidebar"] {
         display: none !important;
@@ -287,7 +278,6 @@ if not st.session_state.authenticated:
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Değişken adı hatasını önlemek için standart isim kullanıldı
         kullanici_listesi = list(st.session_state.users.keys())
         secilen_kullanici = st.selectbox("Kullanıcı Seçin", kullanici_listesi)
         k_sifre = st.text_input("Şifre", type="password")
@@ -329,7 +319,7 @@ if not st.session_state.authenticated:
 # =========================================================
 
 menu_listesi = [
-    "🏠 Dashboard",
+    "🏠 Ana Sayfa",
     "📦 Ürünler",
     "🧾 Satış Faturası Kes",
     "📄 Fatura ile Stok İşle",
@@ -341,6 +331,7 @@ menu_listesi = [
     "📊 Raporlar",
     "➕ Ürün Ekle",
     "💵 Döviz",
+    "🔑 Şifremi Değiştir",
     "⚙️ Ayarlar",
 ]
 
@@ -348,7 +339,7 @@ if st.session_state.is_admin:
     menu_listesi.insert(1, "🔒 Yönetici Paneli")
 
 
-# 1. DESKTOP SIDEBAR
+# SIDEBAR (SOL MENÜ)
 with st.sidebar:
     st.markdown(
         f"""
@@ -362,7 +353,7 @@ with st.sidebar:
 
     st.markdown("---")
 
-    menu_secim = st.radio("MENÜ", menu_listesi, index=0, key="desktop_menu")
+    menu_secim = st.radio("MENÜ", menu_listesi, key="ana_menu_radio")
 
     st.markdown("---")
 
@@ -405,7 +396,7 @@ with st.sidebar:
 
 
 # =========================================================
-# ÜST BAR & MOBİL MENÜ KUTUSU
+# ÜST BAR
 # =========================================================
 
 st.markdown(
@@ -417,17 +408,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-st.markdown(
-    '<div class="mobile-nav-box">📱 <b>Mobil Menü / Sayfa Değiştir</b></div>',
-    unsafe_allow_html=True,
-)
-mobil_menu_secim = st.selectbox(
-    "Gitmek İstediğiniz Sayfayı Seçin", menu_listesi, key="mobile_select"
-)
-
-if mobil_menu_secim != menu_secim:
-    menu_secim = mobil_menu_secim
 
 
 # =========================================================
@@ -542,7 +522,7 @@ if menu_secim == "🔒 Yönetici Paneli":
                 else:
                     st.session_state.users[p_clean] = yeni_p_sifre
                     st.success(
-                        f"🎉 **{p_clean}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
+                        f"🎉 **{p_clean}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu! Personel kendi şifresiyle giriş yapabilir."
                     )
                     st.rerun()
 
@@ -556,12 +536,12 @@ if menu_secim == "🔒 Yönetici Paneli":
 
 
 # =========================================================
-# DASHBOARD
+# ANA SAYFA
 # =========================================================
 
-elif menu_secim == "🏠 Dashboard":
+elif menu_secim == "🏠 Ana Sayfa":
     st.markdown(
-        '<div class="page-title">Dashboard</div>', unsafe_allow_html=True
+        '<div class="page-title">Ana Sayfa</div>', unsafe_allow_html=True
     )
     st.markdown(
         '<div class="page-subtitle">Mobilya mağazanızın genel durumunu buradan takip edebilirsiniz.</div>',
@@ -622,6 +602,20 @@ elif menu_secim == "🏠 Dashboard":
             unsafe_allow_html=True,
         )
 
+    # KRİTİK STOK UYARI PANELI (Ana Sayfa Üzerinde Dikkat Çekici Uyarı)
+    if len(kritik_stok) > 0:
+        st.markdown(
+            '<div class="section-title" style="color:#ff4b4b;">⚠️ Acil Müdahale Gerektiren Kritik Stoklar (3 ve Altı)</div>',
+            unsafe_allow_html=True,
+        )
+        st.dataframe(
+            kritik_stok.style.background_gradient(
+                subset=["Bakiye"], cmap="Reds"
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
     st.markdown(
         '<div class="section-title">📈 Stok Dağılımı</div>',
         unsafe_allow_html=True,
@@ -631,14 +625,19 @@ elif menu_secim == "🏠 Dashboard":
 
 
 # =========================================================
-# ÜRÜNLER
+# ÜRÜNLER (KRİTİK STOKLARI KIRMIZI VURGULAMA)
 # =========================================================
 
 elif menu_secim == "📦 Ürünler":
     st.markdown(
-        '<div class="page-title">📦 Ürün Yönetimi</div>',
+        '<div class="page-title">📦 Ürün Yönetimi & Stok Takibi</div>',
         unsafe_allow_html=True,
     )
+    st.markdown(
+        '<div class="page-subtitle">3 ve daha az kalan kritik stok seviyesindeki ürünler tabloda kırmızı ile vurgulanmaktadır.</div>',
+        unsafe_allow_html=True,
+    )
+
     arama = st.text_input(
         "🔎 Ürün Ara", placeholder="Mobilya adı veya barkod..."
     )
@@ -651,7 +650,26 @@ elif menu_secim == "📦 Ürünler":
             .astype(str)
             .str.contains(arama, case=False, na=False)
         ]
-    st.dataframe(filtre_df, use_container_width=True, hide_index=True)
+
+
+    # Kritik stokları (bakiye <= 3) arka planını kırmızı yaparak vurgulayan stil fonksiyonu
+    def kritik_stok_renklendir(val):
+        color = (
+            "background-color: #ffe6e6; color: #cc0000; font-weight: bold;"
+            if isinstance(val, (int, float)) and val <= 3
+            else ""
+        )
+        return color
+
+
+    styled_df = filtre_df.style.map(
+        kritik_stok_renklendir, subset=["Bakiye"]
+    ).format({
+        "Alış Fiyatı (TL)": "₺{:,.2f}",
+        "Satış Fiyatı (TL)": "₺{:,.2f}",
+    })
+
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
 
 # =========================================================
@@ -884,6 +902,48 @@ elif menu_secim == "➕ Ürün Ekle":
 
 
 # =========================================================
+# ŞİFREMİ DEĞİŞTİR
+# =========================================================
+
+elif menu_secim == "🔑 Şifremi Değiştir":
+    st.markdown(
+        '<div class="page-title">🔑 Personel Şifre Değiştirme Paneli</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Şifrenizi unutmamanız veya güncel tutmanız için buradan değiştirebilirsiniz.</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.form("sifre_degistir_form"):
+        aktif_kullanici = st.session_state.current_user
+        st.write(f"İşlem Yapılan Kullanıcı: **{aktif_kullanici}**")
+
+        eski_sifre = st.text_input("Mevcut Şifreniz", type="password")
+        yeni_sifre_1 = st.text_input("Yeni Şifreniz", type="password")
+        yeni_sifre_2 = st.text_input("Yeni Şifreniz (Tekrar)", type="password")
+
+        sifre_guncelle_btn = st.form_submit_button("🔒 Şifremi Güncelle")
+
+        if sifre_guncelle_btn:
+            if (
+                aktif_kullanici in st.session_state.users
+                and st.session_state.users[aktif_kullanici] == eski_sifre
+            ):
+                if yeni_sifre_1 and yeni_sifre_1 == yeni_sifre_2:
+                    st.session_state.users[aktif_kullanici] = yeni_sifre_1
+                    st.success(
+                        "🎉 Şifreniz başarıyla güncellendi! Yeni şifrenizle giriş yapabilirsiniz."
+                    )
+                else:
+                    st.warning(
+                        "⚠️ Yeni girdiğiniz şifreler birbiriyle uyuşmuyor veya boş bırakıldı."
+                    )
+            else:
+                st.error("❌ Mevcut şifrenizi hatalı girdiniz.")
+
+
+# =========================================================
 # DİĞER SAYFALAR
 # =========================================================
 
@@ -959,7 +1019,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.6.0
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.6.4
 </div>
 """,
     unsafe_allow_html=True,
