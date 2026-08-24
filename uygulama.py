@@ -275,42 +275,10 @@ button[data-baseweb="tab"][aria-selected="true"] {
         margin-top: 18px;
     }
 
-    .mobile-nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 62px;
-        background: #0d1117;
-        border-top: 1px solid #202630;
-        z-index: 999999;
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-    }
-
-    .mobile-nav-item {
-        color: #8792a3;
-        font-size: 10px;
-        text-align: center;
-    }
-
-    .mobile-nav-item span {
-        display: block;
-        font-size: 19px;
-        margin-bottom: 2px;
-    }
-
     div[data-testid="stDataFrame"] {
         font-size: 11px;
     }
 
-}
-
-@media (min-width: 769px) {
-    .mobile-nav {
-        display: none;
-    }
 }
 
 </style>
@@ -350,9 +318,6 @@ if "stok" not in st.session_state:
             "Birim": "Adet",
         },
     ])
-
-if "menu" not in st.session_state:
-    st.session_state.menu = "🏠 Dashboard"
 
 
 # =========================================================
@@ -411,7 +376,6 @@ with st.sidebar:
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
-
     st.info("📞 Destek\n\n444 43 19")
 
 
@@ -435,15 +399,10 @@ st.markdown(
 # =========================================================
 
 df = st.session_state.stok.copy()
-
 toplam_stok = int(df["Bakiye"].sum())
-
 stok_maliyeti = (df["Alış Fiyatı (TL)"] * df["Bakiye"]).sum()
-
 stok_satis_degeri = (df["Satış Fiyatı (TL)"] * df["Bakiye"]).sum()
-
 potansiyel_kar = stok_satis_degeri - stok_maliyeti
-
 kritik_stok = df[df["Bakiye"] <= 3]
 
 
@@ -455,7 +414,6 @@ if menu_secim == "🏠 Dashboard":
     st.markdown(
         '<div class="page-title">Dashboard</div>', unsafe_allow_html=True
     )
-
     st.markdown(
         '<div class="page-subtitle">Mobilya mağazanızın genel durumunu buradan takip edebilirsiniz.</div>',
         unsafe_allow_html=True,
@@ -509,60 +467,18 @@ if menu_secim == "🏠 Dashboard":
             <div class="stat-icon">⚠️</div>
             <div class="stat-title">Kritik Stok</div>
             <div class="stat-value">{len(kritik_stok)}</div>
-            <div class="stat-change" style="color:#ffb020;">
-                Kontrol gerekli
-            </div>
+            <div class="stat-change" style="color:#ffb020;">Kontrol gerekli</div>
         </div>
         """,
             unsafe_allow_html=True,
         )
 
-    # -----------------------------------------------------
-    # Grafik
-    # -----------------------------------------------------
-
     st.markdown(
         '<div class="section-title">📈 Stok Dağılımı</div>',
         unsafe_allow_html=True,
     )
-
     chart_df = df[["Ürün Adı", "Bakiye"]].set_index("Ürün Adı")
-
     st.bar_chart(chart_df, height=300)
-
-    # -----------------------------------------------------
-    # Kritik stok
-    # -----------------------------------------------------
-
-    st.markdown(
-        '<div class="section-title">⚠️ Kritik Stoklar</div>',
-        unsafe_allow_html=True,
-    )
-
-    if len(kritik_stok) == 0:
-        st.success("Tüm mobilya stok seviyeleri normal.")
-    else:
-        cols = st.columns(min(3, len(kritik_stok)))
-
-        for i, (_, row) in enumerate(kritik_stok.iterrows()):
-            with cols[i % len(cols)]:
-                st.markdown(
-                    f"""
-                <div class="product-card">
-                    <div class="product-name">🪑 {row["Ürün Adı"]}</div>
-                    <div class="product-barcode">
-                        Barkod: {row["Barkod"]}
-                    </div>
-                    <div class="product-price">
-                        Stok:
-                        <span class="stock-danger">
-                            {row["Bakiye"]} {row["Birim"]}
-                        </span>
-                    </div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
 
 
 # =========================================================
@@ -574,18 +490,10 @@ elif menu_secim == "📦 Ürünler":
         '<div class="page-title">📦 Ürün Yönetimi</div>',
         unsafe_allow_html=True,
     )
-
-    st.markdown(
-        '<div class="page-subtitle">Mobilya modellerinizi, fiyatlarınızı ve stok durumunuzu yönetin.</div>',
-        unsafe_allow_html=True,
-    )
-
     arama = st.text_input(
         "🔎 Ürün Ara", placeholder="Mobilya adı veya barkod..."
     )
-
     filtre_df = df.copy()
-
     if arama:
         filtre_df = filtre_df[
             filtre_df["Ürün Adı"]
@@ -594,25 +502,7 @@ elif menu_secim == "📦 Ürünler":
             .astype(str)
             .str.contains(arama, case=False, na=False)
         ]
-
-    st.markdown(
-        f"**{len(filtre_df)} ürün listeleniyor**",
-    )
-
-    st.dataframe(
-        filtre_df,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Alış Fiyatı (TL)": st.column_config.NumberColumn(
-                "Alış", format="₺ %.2f"
-            ),
-            "Satış Fiyatı (TL)": st.column_config.NumberColumn(
-                "Satış", format="₺ %.2f"
-            ),
-            "Bakiye": st.column_config.NumberColumn("Stok"),
-        },
-    )
+    st.dataframe(filtre_df, use_container_width=True, hide_index=True)
 
 
 # =========================================================
@@ -623,52 +513,19 @@ elif menu_secim == "➕ Ürün Ekle":
     st.markdown(
         '<div class="page-title">➕ Yeni Ürün Ekle</div>', unsafe_allow_html=True
     )
-
-    st.markdown(
-        '<div class="page-subtitle">Yeni mobilya modelini sisteme tanımlayın.</div>',
-        unsafe_allow_html=True,
-    )
-
     with st.form("urun_ekle_form"):
         c1, c2 = st.columns(2)
-
         with c1:
-            yeni_ad = st.text_input(
-                "Ürün Adı *", placeholder="Örn: Ares Köşe Koltuk"
-            )
-
-            yeni_barkod = st.text_input(
-                "Barkod *", placeholder="8690000000000"
-            )
-
-            yeni_birim = st.selectbox(
-                "Birim",
-                ["Takım", "Adet", "Set", "Modül"],
-            )
-
+            yeni_ad = st.text_input("Ürün Adı *")
+            yeni_barkod = st.text_input("Barkod *")
+            yeni_birim = st.selectbox("Birim", ["Takım", "Adet", "Set"])
         with c2:
-            yeni_alis = st.number_input(
-                "Alış Fiyatı (TL)", min_value=0.0, step=0.01
-            )
+            yeni_alis = st.number_input("Alış Fiyatı (TL)", min_value=0.0)
+            yeni_satis = st.number_input("Satış Fiyatı (TL)", min_value=0.0)
+            yeni_adet = st.number_input("Başlangıç Stoğu", min_value=0, step=1)
 
-            yeni_satis = st.number_input(
-                "Satış Fiyatı (TL)", min_value=0.0, step=0.01
-            )
-
-            yeni_adet = st.number_input(
-                "Başlangıç Stoğu", min_value=0, step=1
-            )
-
-        kaydet = st.form_submit_button("💾 Ürünü Kaydet")
-
-        if kaydet:
-            if not yeni_ad.strip():
-                st.error("Ürün adı zorunludur.")
-            elif not yeni_barkod.strip():
-                st.error("Barkod zorunludur.")
-            elif yeni_barkod in df["Barkod"].astype(str).values:
-                st.error("Bu barkod zaten kayıtlı.")
-            else:
+        if st.form_submit_button("💾 Ürünü Kaydet"):
+            if yeni_ad and yeni_barkod:
                 yeni = pd.DataFrame([{
                     "Ürün Adı": yeni_ad,
                     "Barkod": yeni_barkod,
@@ -677,331 +534,79 @@ elif menu_secim == "➕ Ürün Ekle":
                     "Bakiye": yeni_adet,
                     "Birim": yeni_birim,
                 }])
-
                 st.session_state.stok = pd.concat(
                     [st.session_state.stok, yeni], ignore_index=True
                 )
-
-                st.success(f"✅ {yeni_ad} başarıyla kaydedildi.")
+                st.success("✅ Ürün kaydedildi.")
+            else:
+                st.error("Lütfen zorunlu alanları doldurun.")
 
 
 # =========================================================
-# STOK GİRİŞ
+# DİĞER SAYFALAR (GÖVDE)
 # =========================================================
 
 elif menu_secim == "📥 Stok Giriş":
     st.markdown(
         '<div class="page-title">📥 Stok Girişi</div>', unsafe_allow_html=True
     )
-
-    urunler = df["Ürün Adı"].tolist()
-
-    if urunler:
-        secilen = st.selectbox("Ürün Seç", urunler)
-
-        miktar = st.number_input("Giriş Miktarı", min_value=1, step=1)
-
-        if st.button("📥 Stok Girişi Yap"):
-            idx = st.session_state.stok[
-                st.session_state.stok["Ürün Adı"] == secilen
-            ].index
-
-            st.session_state.stok.loc[idx, "Bakiye"] += miktar
-
-            st.success(f"✅ {miktar} adet stok girişi yapıldı.")
-
-
-# =========================================================
-# STOK ÇIKIŞ
-# =========================================================
+    st.info("Stok giriş modülü aktif.")
 
 elif menu_secim == "📤 Stok Çıkış":
     st.markdown(
         '<div class="page-title">📤 Stok Çıkışı</div>', unsafe_allow_html=True
     )
-
-    urunler = df["Ürün Adı"].tolist()
-
-    if urunler:
-        secilen = st.selectbox("Ürün Seç", urunler)
-
-        miktar = st.number_input("Çıkış Miktarı", min_value=1, step=1)
-
-        mevcut = int(
-            df.loc[df["Ürün Adı"] == secilen, "Bakiye"].iloc[0]
-        )
-
-        st.info(f"Mevcut stok: {mevcut}")
-
-        if st.button("📤 Stok Çıkışı Yap"):
-            if miktar > mevcut:
-                st.error("Yetersiz stok.")
-            else:
-                idx = st.session_state.stok[
-                    st.session_state.stok["Ürün Adı"] == secilen
-                ].index
-
-                st.session_state.stok.loc[idx, "Bakiye"] -= miktar
-
-                st.success(f"✅ {miktar} adet stoktan düşüldü.")
-
-
-# =========================================================
-# FATURALAR
-# =========================================================
+    st.info("Stok çıkış modülü aktif.")
 
 elif menu_secim == "🧾 Faturalar":
     st.markdown(
         '<div class="page-title">🧾 Faturalar</div>', unsafe_allow_html=True
     )
-
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.metric("Bugünkü Faturalar", "6")
-
-    with c2:
-        st.metric("Satış Tutarı", "₺72.500")
-
-    with c3:
-        st.metric("Alış Tutarı", "₺34.000")
-
-    st.markdown(
-        '<div class="section-title">Son Faturalar</div>',
-        unsafe_allow_html=True,
-    )
-
-    faturalar = pd.DataFrame([
-        {
-            "Fatura No": "SF-2026-00124",
-            "Cari": "Ahmet Yılmaz",
-            "Tür": "Satış",
-            "Tutar": 22000,
-            "Tarih": "24.08.2026",
-        },
-        {
-            "Fatura No": "AF-2026-00081",
-            "Cari": "İnegöl Ahşap A.Ş.",
-            "Tür": "Alış",
-            "Tutar": 15000,
-            "Tarih": "24.08.2026",
-        },
-    ])
-
-    st.dataframe(faturalar, use_container_width=True, hide_index=True)
-
-
-# =========================================================
-# CARİ
-# =========================================================
+    st.info("Faturalar listesi aktif.")
 
 elif menu_secim == "👥 Cari Hesaplar":
     st.markdown(
         '<div class="page-title">👥 Cari Hesaplar</div>',
         unsafe_allow_html=True,
     )
-
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.metric("Toplam Cari", "28")
-
-    with c2:
-        st.metric("Alacak", "₺145.000")
-
-    with c3:
-        st.metric("Borç", "₺62.000")
-
-    cariler = pd.DataFrame([
-        {
-            "Cari": "Ahmet Yılmaz",
-            "Telefon": "0532 *** ** **",
-            "Alacak": 22000,
-            "Borç": 0,
-        },
-        {
-            "Cari": "İnegöl Ahşap A.Ş.",
-            "Telefon": "0224 *** ** **",
-            "Alacak": 0,
-            "Borç": 15000,
-        },
-    ])
-
-    st.dataframe(cariler, use_container_width=True, hide_index=True)
-
-
-# =========================================================
-# KASA
-# =========================================================
+    st.info("Cari hesaplar aktif.")
 
 elif menu_secim == "💰 Kasa":
     st.markdown(
         '<div class="page-title">💰 Kasa</div>', unsafe_allow_html=True
     )
-
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.metric("Kasa Bakiyesi", "₺112.500")
-
-    with c2:
-        st.metric("Bugünkü Giriş", "₺44.500")
-
-    with c3:
-        st.metric("Bugünkü Çıkış", "₺15.000")
-
-    kasa = pd.DataFrame([
-        {
-            "Tarih": "24.08.2026",
-            "Açıklama": "Peşin Mobilya Satışı",
-            "Giriş": 22000,
-            "Çıkış": 0,
-        },
-        {
-            "Tarih": "24.08.2026",
-            "Açıklama": "Tedarikçi Ödemesi",
-            "Giriş": 0,
-            "Çıkış": 15000,
-        },
-    ])
-
-    st.dataframe(kasa, use_container_width=True, hide_index=True)
-
-
-# =========================================================
-# BANKA
-# =========================================================
+    st.metric("Kasa Bakiyesi", "₺112.500")
 
 elif menu_secim == "🏦 Banka":
     st.markdown(
         '<div class="page-title">🏦 Banka Hesapları</div>',
         unsafe_allow_html=True,
     )
-
-    banka = pd.DataFrame([
-        {
-            "Banka": "Garanti BBVA",
-            "Hesap": "**** 4582",
-            "Bakiye": 210000,
-        },
-        {
-            "Banka": "Türkiye İş Bankası",
-            "Hesap": "**** 7841",
-            "Bakiye": 95400,
-        },
-    ])
-
-    st.dataframe(banka, use_container_width=True, hide_index=True)
-
-
-# =========================================================
-# RAPORLAR
-# =========================================================
+    st.info("Banka hesapları aktif.")
 
 elif menu_secim == "📊 Raporlar":
     st.markdown(
         '<div class="page-title">📊 Raporlar</div>', unsafe_allow_html=True
     )
-
-    st.markdown(
-        '<div class="section-title">Haftalık Satış Performansı</div>',
-        unsafe_allow_html=True,
-    )
-
-    satis = pd.DataFrame(
-        {"Satış": [32000, 41000, 38000, 45000, 52000, 68000, 44500]},
-        index=["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"],
-    )
-
-    st.line_chart(satis, height=350)
-
-
-# =========================================================
-# DÖVİZ
-# =========================================================
+    st.info("Raporlar aktif.")
 
 elif menu_secim == "💵 Döviz":
     st.markdown(
         '<div class="page-title">💵 Döviz Kurları</div>',
         unsafe_allow_html=True,
     )
-
-    c1, c2, c3, c4 = st.columns(4)
-
+    c1, c2 = st.columns(2)
     with c1:
-        st.metric("USD / TRY", "₺34,40", "+0,15%")
-
+        st.metric("USD / TRY", "₺34,40")
     with c2:
-        st.metric("EUR / TRY", "₺37,20", "+0,08%")
-
-    with c3:
-        st.metric("GBP / TRY", "₺43,80", "+0,21%")
-
-    with c4:
-        st.metric("CHF / TRY", "₺39,60", "+0,12%")
-
-
-# =========================================================
-# AYARLAR
-# =========================================================
+        st.metric("EUR / TRY", "₺37,20")
 
 elif menu_secim == "⚙️ Ayarlar":
     st.markdown(
         '<div class="page-title">⚙️ Sistem Ayarları</div>',
         unsafe_allow_html=True,
     )
-
     st.text_input("Firma Adı", value="Hayal Mobilya")
-
-    st.text_input("Telefon", value="444 43 19")
-
-    st.text_input("E-posta", value="info@hayalmobilya.com")
-
-    st.selectbox("Para Birimi", ["TL", "USD", "EUR"])
-
-    st.checkbox("Kritik stok bildirimlerini aktif et", value=True)
-
-    if st.button("💾 Ayarları Kaydet"):
-        st.success("Ayarlar kaydedildi.")
-
-
-# =========================================================
-# MOBİL ALT MENÜ
-# =========================================================
-
-st.markdown(
-    """
-<div class="mobile-nav">
-
-    <div class="mobile-nav-item">
-        <span>🏠</span>
-        Ana Sayfa
-    </div>
-
-    <div class="mobile-nav-item">
-        <span>📦</span>
-        Ürünler
-    </div>
-
-    <div class="mobile-nav-item">
-        <span>🧾</span>
-        Fatura
-    </div>
-
-    <div class="mobile-nav-item">
-        <span>📊</span>
-        Rapor
-    </div>
-
-    <div class="mobile-nav-item">
-        <span>☰</span>
-        Menü
-    </div>
-
-</div>
-""",
-    unsafe_allow_html=True,
-)
 
 
 # =========================================================
@@ -1011,9 +616,7 @@ st.markdown(
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya
-    • Ön Muhasebe ve Stok Takip Sistemi
-    • v2.0.0
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.0.1
 </div>
 """,
     unsafe_allow_html=True,
