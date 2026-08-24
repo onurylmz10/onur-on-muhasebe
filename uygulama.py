@@ -942,89 +942,23 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
         '<div class="page-subtitle">Müşteri ve tedarikçilerinizin finansal bakiye durumları.</div>',
         unsafe_allow_html=True,
     )
-    st.dataframe(
-        st.session_state.global_cariler, use_container_width=True, hide_index=True
-    )
-
-    st.markdown("#### Yeni Cari Tanımla")
-    with st.form("yeni_cari_form"):
-        c_ad = st.text_input("Cari / Firma Adı")
-        c_tel = st.text_input("Telefon Numarası")
-        c_tur = st.selectbox("Cari Türü", ["Müşteri", "Tedarikçi"])
-        if st.form_submit_button("Cari Kartı Kaydet"):
-            if c_ad:
-                yeni_c = pd.DataFrame([{
-                    "Cari Adı": c_ad,
-                    "Telefon": c_tel,
-                    "Tür": c_tur,
-                    "Bakiye (TL)": 0.0,
-                }])
-                st.session_state.global_cariler = pd.concat(
-                    [st.session_state.global_cariler, yeni_c], ignore_index=True
-                )
-                st.success("✅ Cari kart başarıyla kaydedildi.")
-            else:
-                st.error("❌ Hata: Cari / Firma adı boş bırakılamaz!")
+    st.dataframe(st.session_state.global_cariler, use_container_width=True, hide_index=True)
 
 
 # =========================================================
-# 9. BANKA HESAPLARI & IBAN YÖNETİMİ
+# 9. BANKA HESAPLARI
 # =========================================================
 
 elif menu_secim == "🏦 Banka Hesapları":
     st.markdown(
-        '<div class="page-title">🏦 Banka Hesapları & IBAN Yönetimi</div>',
+        '<div class="page-title">🏦 Banka Hesapları & IBAN Bilgileri</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="page-subtitle">Şirket banka hesaplarınızı yönetin ve IBAN bilgilerinizi takip edin.</div>',
+        '<div class="page-subtitle">Şirketin aktif ticari banka hesapları ve IBAN listesi.</div>',
         unsafe_allow_html=True,
     )
-
-    st.dataframe(
-        st.session_state.global_banka_hesaplari,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    st.markdown("---")
-    st.markdown("#### ➕ Yeni Banka Hesabı / IBAN Ekle")
-    with st.form("yeni_banka_form"):
-        c1, c2 = st.columns(2)
-        with c1:
-            b_adi = st.text_input(
-                "Banka Adı *", placeholder="Örn: Yapı Kredi, Ziraat vb."
-            )
-            b_sube = st.text_input(
-                "Şube Adı / Kodu", placeholder="Örn: Edremit Şubesi (1542)"
-            )
-            b_hesap_adi = st.text_input(
-                "Hesap Açıklaması / Sahibi", placeholder="Örn: Ticari Vadesi Hesap"
-            )
-        with c2:
-            b_iban = st.text_input(
-                "IBAN Numarası *", placeholder="TR00 0000 0000 0000 0000 0000 00"
-            )
-            b_doviz = st.selectbox("Para Birimi", ["TL", "USD", "EUR", "GBP"])
-
-        if st.form_submit_button("💾 Banka Hesabını Kaydet"):
-            if b_adi and b_iban:
-                yeni_b = pd.DataFrame([{
-                    "Banka Adı": b_adi,
-                    "Şube / Kod": b_sube,
-                    "Hesap Adı": b_hesap_adi,
-                    "IBAN": b_iban.upper(),
-                    "Döviz": b_doviz,
-                }])
-                st.session_state.global_banka_hesaplari = pd.concat(
-                    [st.session_state.global_banka_hesaplari, yeni_b],
-                    ignore_index=True,
-                )
-                st.success(
-                    "✅ Banka hesabı ve IBAN bilgisi başarıyla sisteme kaydedildi."
-                )
-            else:
-                st.error("❌ Hata: Lütfen Banka Adı ve IBAN alanlarını doldurun.")
+    st.dataframe(st.session_state.global_banka_hesaplari, use_container_width=True, hide_index=True)
 
 
 # =========================================================
@@ -1033,66 +967,43 @@ elif menu_secim == "🏦 Banka Hesapları":
 
 elif menu_secim == "➕ Yeni Ürün Kartı Aç":
     st.markdown(
-        '<div class="page-title">➕ Yeni Ürün / Model Tanımla</div>',
+        '<div class="page-title">➕ Yeni Ürün / Mobilya Kartı Tanımla</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Kataloğa yeni bir mobilya modeli veya hammadde ekleyin.</div>',
         unsafe_allow_html=True,
     )
 
-    if "random_barkod_uret" not in st.session_state:
-        st.session_state.random_barkod_uret = "".join(
-            [str(random.randint(0, 9)) for _ in range(13)]
-        )
+    with st.form("yeni_urun_formu"):
+        y_ad = st.text_input("Ürün / Model Adı *")
+        y_barkod = st.text_input("Barkod Numarası", value=str(random.randint(8690000000000, 8699999999999)))
+        c1, c2 = st.columns(2)
+        with c1:
+            y_alis = st.number_input("Alış / Maliyet Fiyatı (TL)", min_value=0.0, step=100.0, value=1000.0)
+            y_bakiye = st.number_input("Başlangıç Stok Adedi", min_value=0, step=1, value=5)
+        with c2:
+            y_satis = st.number_input("Satış Fiyatı (TL)", min_value=0.0, step=100.0, value=1500.0)
+            y_kritik = st.number_input("Kritik Stok Sınırı", min_value=1, step=1, value=3)
+        y_birim = st.selectbox("Birim", ["Adet", "Takım", "Metre", "Paket"])
 
-    u_ad = st.text_input("Ürün Model Adı *", key="yeni_u_ad")
-    
-    col_b1, col_b2 = st.columns([3, 1])
-    with col_b1:
-        u_barkod = st.text_input(
-            "Barkod Numarası *",
-            value=st.session_state.random_barkod_uret,
-            key="yeni_u_barkod"
-        )
-    with col_b2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Barkod Yenile"):
-            st.session_state.random_barkod_uret = "".join(
-                [str(random.randint(0, 9)) for _ in range(13)]
-            )
-            st.rerun()
+        yeni_urun_kaydet = st.form_submit_button("💾 Yeni Ürünü Kataloğa Kaydet")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        u_birim = st.selectbox("Birim", ["Takım", "Adet", "Set"], key="yeni_u_birim")
-        u_alis = st.number_input("Maliyet / Alış Fiyatı (TL)", min_value=0.0, key="yeni_u_alis")
-    with c2:
-        u_satis = st.number_input("Satış Fiyatı (TL)", min_value=0.0, key="yeni_u_satis")
-        u_kritik = st.number_input(
-            "Kritik Stok Uyarısı Sınırı", min_value=1, value=3, key="yeni_u_kritik"
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("💾 Ürünü Kataloğa Kaydet", type="primary"):
-        if u_ad and u_barkod:
-            if u_barkod in st.session_state.global_stok["Barkod"].astype(str).values:
-                st.error("❌ Hata: Bu barkod sistemde zaten kayıtlı! Lütfen yeni bir barkod üretin.")
+        if yeni_urun_kaydet:
+            if not y_ad:
+                st.error("❌ Ürün adı boş olamaz!")
             else:
                 yeni_satir = pd.DataFrame([{
-                    "Ürün Adı": u_ad,
-                    "Barkod": str(u_barkod),
-                    "Alış Fiyatı (TL)": float(u_alis),
-                    "Satış Fiyatı (TL)": float(u_satis),
-                    "Bakiye": 0,
-                    "Kritik Sınır": int(u_kritik),
-                    "Birim": u_birim,
+                    "Ürün Adı": y_ad,
+                    "Barkod": y_barkod,
+                    "Alış Fiyatı (TL)": y_alis,
+                    "Satış Fiyatı (TL)": y_satis,
+                    "Bakiye": y_bakiye,
+                    "Kritik Sınır": y_kritik,
+                    "Birim": y_birim,
                 }])
-                st.session_state.global_stok = pd.concat(
-                    [st.session_state.global_stok, yeni_satir], ignore_index=True
-                )
-                st.session_state.random_barkod_uret = "".join(
-                    [str(random.randint(0, 9)) for _ in range(13)]
-                )
-                st.success(f"✅ Başarılı! '{u_ad}' ürün kartı kataloğa eklendi.")
-        else:
-            st.error("❌ Hata: Lütfen zorunlu alanları (Ürün Adı ve Barkod) doldurun.")
+                st.session_state.global_stok = pd.concat([st.session_state.global_stok, yeni_satir], ignore_index=True)
+                st.success(f"✅ {y_ad} başarıyla sisteme eklendi!")
 
 
 # =========================================================
@@ -1101,11 +1012,16 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
 
 elif menu_secim == "💰 Kasa & Finans":
     st.markdown(
-        '<div class="page-title">💰 Kasa & Finansal Durum</div>',
+        '<div class="page-title">💰 Kasa & Şirket Finans Durumu</div>',
         unsafe_allow_html=True,
     )
-    st.metric("Ana Kasa Nakit Varlığı", "₺128.400")
-    st.info("Banka ve pos entegrasyonları aktif.")
+    st.markdown(
+        '<div class="page-subtitle">Genel gelir-gider dengesi ve kasa akışı.</div>',
+        unsafe_allow_html=True,
+    )
+    toplam_ciro_kasa = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if len(st.session_state.global_faturalar) > 0 else 0.0
+    st.metric("Toplam Tahsil Edilen / Faturalandırılan Tutar", f"₺{toplam_ciro_kasa:,.2f}")
+    st.info("Detaylı kasa hareketleri ve günlük gelir/gider modülü sonraki güncellemede aktifleşecektir.")
 
 
 # =========================================================
@@ -1114,17 +1030,14 @@ elif menu_secim == "💰 Kasa & Finans":
 
 elif menu_secim == "📊 Raporlar & Analiz":
     st.markdown(
-        '<div class="page-title">📊 Kapsamlı Raporlar</div>',
+        '<div class="page-title">📊 Kapsamlı Raporlar & Analizler</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        "Stok bazlı kârlılık ve ciro analizleri bu alanda listelenmektedir."
+        '<div class="page-subtitle">Üretim hızı, en çok satan ürünler ve finansal özet raporları.</div>',
+        unsafe_allow_html=True,
     )
-    st.bar_chart(
-        st.session_state.global_stok[["Ürün Adı", "Satış Fiyatı (TL)"]].set_index(
-            "Ürün Adı"
-        )
-    )
+    st.bar_chart(st.session_state.global_stok.set_index("Ürün Adı")["Bakiye"])
 
 
 # =========================================================
@@ -1133,38 +1046,36 @@ elif menu_secim == "📊 Raporlar & Analiz":
 
 elif menu_secim == "🔑 Şifre Değiştir":
     st.markdown(
-        '<div class="page-title">🔑 Şifre Güncelleme</div>',
+        '<div class="page-title">🔑 Kullanıcı Şifre Değiştirme</div>',
         unsafe_allow_html=True,
     )
-    with st.form("sifre_form_degis"):
-        eski = st.text_input("Mevcut Şifre", type="password")
-        yeni1 = st.text_input("Yeni Şifre", type="password")
-        yeni2 = st.text_input("Yeni Şifre Tekrar", type="password")
-        if st.form_submit_button("Şifreyi Güncelle"):
-            if (
-                st.session_state.current_user in st.session_state.global_users
-                and st.session_state.global_users[st.session_state.current_user]
-                == eski
-            ):
-                if yeni1 and yeni1 == yeni2:
-                    st.session_state.global_users[
-                        st.session_state.current_user
-                    ] = yeni1
-                    st.success("✅ Şifreniz başarıyla değiştirildi.")
+    st.markdown(
+        '<div class="page-subtitle">Güvenliğiniz için şifrenizi güncelleyin.</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.form("sifre_degistir_form"):
+        eski_s = st.text_input("Eski Şifre", type="password")
+        yeni_s1 = st.text_input("Yeni Şifre", type="password")
+        yeni_s2 = st.text_input("Yeni Şifre (Tekrar)", type="password")
+        degistir_btn = st.form_submit_button("Şifreyi Güncelle")
+
+        if degistir_btn:
+            aktif_kul = st.session_state.current_user
+            if st.session_state.global_users.get(aktif_kul) == eski_s:
+                if yeni_s1 and yeni_s1 == yeni_s2:
+                    st.session_state.global_users[aktif_kul] = yeni_s1
+                    st.success("✅ Şifreniz başarıyla değiştirildi!")
                 else:
-                    st.error("❌ Hata: Yeni şifreler birbiriyle uyuşmuyor!")
+                    st.error("❌ Yeni şifreler uyuşmuyor veya boş bırakılamaz!")
             else:
-                st.error("❌ Hata: Mevcut şifreyi hatalı girdiniz!")
+                st.error("❌ Eski şifrenizi hatalı girdiniz!")
 
-
-# =========================================================
-# FOOTER
-# =========================================================
-
+# Altbilgi
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Kurumsal Ön Muhasebe & ERP v3.4 • Tüm Hakları Saklıdır.
+    Hayal Mobilya ERP & Stok Yönetim Sistemi • Tüm Hakları Saklıdır © 2026
 </div>
 """,
     unsafe_allow_html=True,
