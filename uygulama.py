@@ -95,34 +95,95 @@ if "global_faturalar" not in st.session_state:
       {"Fatura No": "FTR-2026-001", "Müşteri": "Ahşap Dünyası Ltd.", "Toplam": 12500.0}
   ]
 
+if "auth_mode" not in st.session_state:
+  st.session_state.auth_mode = "Giriş Yap"
 
-# Giriş Ekranı Fonksiyonu
-def login_ekrani():
+
+# Giriş ve Kimlik Doğrulama Ekranı
+def auth_ekrani():
   st.markdown(
-      "<h2 style='text-align:center;'>Hayal Mobilya ERP Giriş</h2>",
+      "<h2 style='text-align:center;'>🛋️ Hayal Mobilya ERP</h2>",
       unsafe_allow_html=True,
   )
   col1, col2, col3 = st.columns([1, 2, 1])
+
   with col2:
-    with st.form("login_form"):
-      k_adi = st.text_input("Kullanıcı Adı")
-      sifre = st.text_input("Şifre", type="password")
-      btn = st.form_submit_button("Giriş Yap")
-      if btn:
-        if (
-            k_adi in st.session_state.global_users
-            and st.session_state.global_users[k_adi] == sifre
-        ):
-          st.session_state.current_user = k_adi
-          st.success("Giriş başarılı!")
-          st.rerun()
-        else:
-          st.error("Kullanıcı adı veya şifre hatalı!")
+    secim = st.radio(
+        "İşlem Seçin",
+        ["Giriş Yap", "Şifremi Unuttum", "Yeni Hesap Aç"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    if secim == "Giriş Yap":
+      with st.form("login_form"):
+        st.markdown("### Oturum Aç")
+        k_adi = st.text_input("Kullanıcı Adı")
+        sifre = st.text_input("Şifre", type="password")
+        btn = st.form_submit_button("Giriş Yap", use_container_width=True)
+        if btn:
+          if (
+              k_adi in st.session_state.global_users
+              and st.session_state.global_users[k_adi] == sifre
+          ):
+            st.session_state.current_user = k_adi
+            st.success("Giriş başarılı!")
+            st.rerun()
+          else:
+            st.error("Kullanıcı adı veya şifre hatalı!")
+
+    elif secim == "Şifremi Unuttum":
+      with st.form("sifre_unuttum_form"):
+        st.markdown("### Şifre Sıfırlama")
+        k_adi = st.text_input("Kullanıcı Adı")
+        yeni_sifre = st.text_input("Yeni Şifre", type="password")
+        yeni_sifre_tekrar = st.text_input(
+            "Yeni Şifre (Tekrar)", type="password"
+        )
+        sifre_sifirla_btn = st.form_submit_button(
+            "Şifreyi Sıfırla", use_container_width=True
+        )
+
+        if sifre_sifirla_btn:
+          if k_adi in st.session_state.global_users:
+            if yeni_sifre and yeni_sifre == yeni_sifre_tekrar:
+              st.session_state.global_users[k_adi] = yeni_sifre
+              st.success(
+                  "✅ Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz."
+              )
+            else:
+              st.error("❌ Yeni şifreler boş olamaz ve uyuşmalıdır!")
+          else:
+            st.error("❌ Bu kullanıcı adı sistemde bulunamadı!")
+
+    elif secim == "Yeni Hesap Aç":
+      with st.form("yeni_hesap_form"):
+        st.markdown("### Yeni Kullanıcı Kaydı")
+        y_kadi = st.text_input("Yeni Kullanıcı Adı")
+        y_sifre = st.text_input("Şifre", type="password")
+        y_sifre_tekrar = st.text_input("Şifre (Tekrar)", type="password")
+        kayit_btn = st.form_submit_button(
+            "Hesap Oluştur", use_container_width=True
+        )
+
+        if kayit_btn:
+          if not y_kadi:
+            st.error("❌ Kullanıcı adı boş olamaz!")
+          elif y_kadi in st.session_state.global_users:
+            st.error("❌ Bu kullanıcı adı zaten alınmış!")
+          elif not y_sifre or y_sifre != y_sifre_tekrar:
+            st.error("❌ Şifreler boş olamaz ve uyuşmalıdır!")
+          else:
+            st.session_state.global_users[y_kadi] = y_sifre
+            st.success(
+                "✅ Hesabınız başarıyla oluşturuldu! Şimdi giriş"
+                " yapabilirsiniz."
+            )
 
 
 # Oturum Kontrolü
 if st.session_state.current_user is None:
-  login_ekrani()
+  auth_ekrani()
 else:
   # Kenar Çubuğu Menüsü
   st.sidebar.title("🛋️ Hayal Mobilya ERP")
@@ -161,7 +222,7 @@ else:
         unsafe_allow_html=True,
     )
 
-    # 1. Üst Metrik Kartları
+    # Üst Metrik Kartları
     col1, col2, col3, col4 = st.columns(4)
     with col1:
       st.metric(
@@ -186,7 +247,7 @@ else:
 
     st.markdown("---")
 
-    # 2. Tüm Stok Listesi
+    # Tüm Stok Listesi
     st.markdown("#### 📦 Tüm Stok ve Envanter Listesi")
     st.dataframe(
         st.session_state.global_stok, use_container_width=True, hide_index=True
@@ -194,7 +255,7 @@ else:
 
     st.markdown("---")
 
-    # 3. Tüm Cari Hesaplar Listesi
+    # Tüm Cari Hesaplar Listesi
     st.markdown("#### 👥 Tüm Cari Hesaplar (Müşteri & Tedarikçiler)")
     st.dataframe(
         st.session_state.global_cariler,
@@ -204,7 +265,7 @@ else:
 
     st.markdown("---")
 
-    # 4. Tüm Banka Hesapları Listesi
+    # Tüm Banka Hesapları Listesi
     st.markdown("#### 🏦 Tüm Banka Hesapları ve IBAN Bilgileri")
     st.dataframe(
         st.session_state.global_banka_hesaplari,
@@ -214,7 +275,7 @@ else:
 
     st.markdown("---")
 
-    # 5. Tüm Faturalar Listesi
+    # Tüm Faturalar Listesi
     st.markdown("#### 📄 Tüm Kesilen Satış Faturaları")
     if len(st.session_state.global_faturalar) > 0:
       st.dataframe(
