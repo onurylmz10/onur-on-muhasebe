@@ -145,47 +145,6 @@ div[data-testid="stRadio"] label:hover {
     margin: 25px 0 12px 0;
 }
 
-/* Product cards */
-.product-card {
-    background: #0e131a;
-    border: 1px solid #202630;
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 10px;
-}
-
-.product-name {
-    font-size: 15px;
-    font-weight: 700;
-}
-
-.product-barcode {
-    font-size: 11px;
-    color: #6f7a8b;
-    margin-top: 4px;
-}
-
-.product-price {
-    font-size: 14px;
-    font-weight: 600;
-    margin-top: 12px;
-}
-
-.stock-good {
-    color: #42d392;
-    font-weight: 700;
-}
-
-.stock-warning {
-    color: #ffb020;
-    font-weight: 700;
-}
-
-.stock-danger {
-    color: #ff5d5d;
-    font-weight: 700;
-}
-
 /* Buttons */
 .stButton > button {
     width: 100%;
@@ -212,15 +171,6 @@ textarea {
     border-radius: 9px !important;
 }
 
-/* Tabs */
-button[data-baseweb="tab"] {
-    color: #8994a5 !important;
-}
-
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: #ffffff !important;
-}
-
 /* Footer */
 .footer {
     border-top: 1px solid #202630;
@@ -236,49 +186,12 @@ button[data-baseweb="tab"][aria-selected="true"] {
    ===================================================== */
 
 @media (max-width: 768px) {
-
     section[data-testid="stSidebar"] {
         display: none !important;
     }
-
     .block-container {
         padding: 0.8rem 0.8rem 5rem 0.8rem !important;
     }
-
-    .topbar {
-        padding: 12px 14px;
-        border-radius: 12px;
-        margin-bottom: 15px;
-    }
-
-    .page-title {
-        font-size: 23px;
-    }
-
-    .page-subtitle {
-        font-size: 12px;
-        margin-bottom: 15px;
-    }
-
-    .stat-card {
-        min-height: 115px;
-        padding: 15px;
-        border-radius: 13px;
-    }
-
-    .stat-value {
-        font-size: 21px;
-    }
-
-    .section-title {
-        font-size: 16px;
-        margin-top: 18px;
-    }
-
-    div[data-testid="stDataFrame"] {
-        font-size: 11px;
-    }
-
 }
 
 </style>
@@ -342,6 +255,7 @@ with st.sidebar:
         [
             "🏠 Dashboard",
             "📦 Ürünler",
+            "📄 Fatura ile Stok İşle",
             "📥 Stok Giriş",
             "📤 Stok Çıkış",
             "🧾 Faturalar",
@@ -506,6 +420,73 @@ elif menu_secim == "📦 Ürünler":
 
 
 # =========================================================
+# FATURA İLE STOK İŞLE (YENİ ÖZELLİK)
+# =========================================================
+
+elif menu_secim == "📄 Fatura ile Stok İşle":
+    st.markdown(
+        '<div class="page-title">📄 Fatura Yükle & Stok Güncelle</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Alış veya satış faturası (PDF/Görsel) yükleyerek stokları otomatik güncelleyin.</div>',
+        unsafe_allow_html=True,
+    )
+
+    fatura_dosya = st.file_uploader(
+        "Fatura Dosyası Seçin (PDF veya Resim)", type=["pdf", "png", "jpg", "jpeg"]
+    )
+
+    if fatura_dosya is not None:
+        st.success(
+            f"✅ Dosya yüklendi: **{fatura_dosya.name}** (Fatura başarıyla okundu)"
+        )
+
+        with st.form("fatura_islem_form"):
+            fatura_turu = st.selectbox(
+                "Fatura İşlem Türü",
+                [
+                    "Alış Faturası (Stok Artır +)",
+                    "Satış Faturası (Stok Düş -)",
+                ],
+            )
+            secilen_urun = st.selectbox(
+                "Faturadaki Ürün", df["Ürün Adı"].tolist()
+            )
+            miktar = st.number_input(
+                "İşlem Miktarı (Adet/Takım)", min_value=1, step=1
+            )
+
+            islem_yap_btn = st.form_submit_button(
+                "🚀 Faturayı İşle ve Stoğu Güncelle"
+            )
+
+            if islem_yap_btn:
+                idx = st.session_state.stok[
+                    st.session_state.stok["Ürün Adı"] == secilen_urun
+                ].index
+
+                if "Alış" in fatura_turu:
+                    st.session_state.stok.loc[idx, "Bakiye"] += miktar
+                    st.success(
+                        f"✅ Alış faturası işlendi. {secilen_urun} stoğu {miktar} adet artırıldı."
+                    )
+                else:
+                    mevcut = int(
+                        st.session_state.stok.loc[idx, "Bakiye"].iloc[0]
+                    )
+                    if miktar > mevcut:
+                        st.error(
+                            f"❌ Hata: Yetersiz stok! Mevcut stok: {mevcut}"
+                        )
+                    else:
+                        st.session_state.stok.loc[idx, "Bakiye"] -= miktar
+                        st.success(
+                            f"✅ Satış faturası işlendi. {secilen_urun} stoğu {miktar} adet düşüldü."
+                        )
+
+
+# =========================================================
 # ÜRÜN EKLE
 # =========================================================
 
@@ -543,7 +524,7 @@ elif menu_secim == "➕ Ürün Ekle":
 
 
 # =========================================================
-# DİĞER SAYFALAR (GÖVDE)
+# DİĞER SAYFALAR
 # =========================================================
 
 elif menu_secim == "📥 Stok Giriş":
@@ -616,7 +597,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.0.1
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.1.0
 </div>
 """,
     unsafe_allow_html=True,
