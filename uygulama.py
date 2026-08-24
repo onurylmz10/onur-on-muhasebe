@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 import pandas as pd
 import streamlit as st
 
@@ -7,8 +7,8 @@ import streamlit as st
 # =========================================================
 
 st.set_page_config(
-    page_title="Alp Bilge Yazılım",
-    page_icon="💼",
+    page_title="Hayal Mobilya",
+    page_icon="🪑",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -320,33 +320,33 @@ button[data-baseweb="tab"][aria-selected="true"] {
 
 
 # =========================================================
-# VERİTABANI - DEMO
+# VERİTABANI - DEMO (MOBİLYA ÜRÜNLERİ)
 # =========================================================
 
 if "stok" not in st.session_state:
     st.session_state.stok = pd.DataFrame([
         {
-            "Ürün Adı": "Çaykur Tiryaki Çayı 1 Kg",
+            "Ürün Adı": "Luna Koltuk Takımı",
             "Barkod": "8690576896745",
-            "Alış Fiyatı (TL)": 250.0,
-            "Satış Fiyatı (TL)": 300.0,
-            "Bakiye": 8,
-            "Birim": "Adet",
+            "Alış Fiyatı (TL)": 15000.0,
+            "Satış Fiyatı (TL)": 22000.0,
+            "Bakiye": 5,
+            "Birim": "Takım",
         },
         {
-            "Ürün Adı": "Söke Un 5 Kg",
+            "Ürün Adı": "Prag Yemek Masası Seti",
             "Barkod": "8690456765456",
-            "Alış Fiyatı (TL)": 150.0,
-            "Satış Fiyatı (TL)": 200.0,
-            "Bakiye": 36,
-            "Birim": "Adet",
+            "Alış Fiyatı (TL)": 8000.0,
+            "Satış Fiyatı (TL)": 12500.0,
+            "Bakiye": 12,
+            "Birim": "Takım",
         },
         {
-            "Ürün Adı": "İçim Rahat Laktozsuz Süt 1 L",
+            "Ürün Adı": "Royal Yatak Odası Dolabı",
             "Barkod": "8690654389765",
-            "Alış Fiyatı (TL)": 35.0,
-            "Satış Fiyatı (TL)": 60.0,
-            "Bakiye": 19,
+            "Alış Fiyatı (TL)": 11000.0,
+            "Satış Fiyatı (TL)": 16000.0,
+            "Bakiye": 3,
             "Birim": "Adet",
         },
     ])
@@ -363,8 +363,8 @@ with st.sidebar:
     st.markdown(
         """
     <div class="sidebar-logo">
-        <div class="brand">💼 ALP BİLGE</div>
-        <div class="sub">YAZILIM • ÖN MUHASEBE</div>
+        <div class="brand">🪑 HAYAL MOBİLYA</div>
+        <div class="sub">ÖN MUHASEBE & STOK</div>
     </div>
     """,
         unsafe_allow_html=True,
@@ -403,7 +403,7 @@ with st.sidebar:
         border-radius:10px;
         font-size:12px;
     ">
-        <b>👤 Admin</b><br>
+        <b>👤 Onur Yılmaz</b><br>
         <span style="color:#6f7a8b;">Yönetici</span>
     </div>
     """,
@@ -422,8 +422,8 @@ with st.sidebar:
 st.markdown(
     """
 <div class="topbar">
-    <div class="topbar-title">Alp Bilge Yazılım • Ön Muhasebe</div>
-    <div class="topbar-user">👤 Admin Yönetici</div>
+    <div class="topbar-title">Hayal Mobilya • Ön Muhasebe Yönetim Paneli</div>
+    <div class="topbar-user">👤 Onur Yılmaz</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -444,7 +444,7 @@ stok_satis_degeri = (df["Satış Fiyatı (TL)"] * df["Bakiye"]).sum()
 
 potansiyel_kar = stok_satis_degeri - stok_maliyeti
 
-kritik_stok = df[df["Bakiye"] <= 5]
+kritik_stok = df[df["Bakiye"] <= 3]
 
 
 # =========================================================
@@ -457,7 +457,7 @@ if menu_secim == "🏠 Dashboard":
     )
 
     st.markdown(
-        '<div class="page-subtitle">İşletmenizin genel durumunu buradan takip edebilirsiniz.</div>',
+        '<div class="page-subtitle">Mobilya mağazanızın genel durumunu buradan takip edebilirsiniz.</div>',
         unsafe_allow_html=True,
     )
 
@@ -469,8 +469,8 @@ if menu_secim == "🏠 Dashboard":
         <div class="stat-card">
             <div class="stat-icon">💰</div>
             <div class="stat-title">Bugünkü Satış</div>
-            <div class="stat-value">₺12.450</div>
-            <div class="stat-change">↑ %12,4 geçen güne göre</div>
+            <div class="stat-value">₺44.500</div>
+            <div class="stat-change">↑ %15,2 geçen güne göre</div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -496,7 +496,7 @@ if menu_secim == "🏠 Dashboard":
             <div class="stat-icon">📦</div>
             <div class="stat-title">Toplam Stok</div>
             <div class="stat-value">{toplam_stok:,}</div>
-            <div class="stat-change">Adet / Birim</div>
+            <div class="stat-change">Adet / Takım</div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -540,7 +540,7 @@ if menu_secim == "🏠 Dashboard":
     )
 
     if len(kritik_stok) == 0:
-        st.success("Tüm ürünlerin stok seviyesi normal.")
+        st.success("Tüm mobilya stok seviyeleri normal.")
     else:
         cols = st.columns(min(3, len(kritik_stok)))
 
@@ -549,7 +549,7 @@ if menu_secim == "🏠 Dashboard":
                 st.markdown(
                     f"""
                 <div class="product-card">
-                    <div class="product-name">📦 {row["Ürün Adı"]}</div>
+                    <div class="product-name">🪑 {row["Ürün Adı"]}</div>
                     <div class="product-barcode">
                         Barkod: {row["Barkod"]}
                     </div>
@@ -576,12 +576,12 @@ elif menu_secim == "📦 Ürünler":
     )
 
     st.markdown(
-        '<div class="page-subtitle">Ürünlerinizi, fiyatlarınızı ve stok durumunuzu yönetin.</div>',
+        '<div class="page-subtitle">Mobilya modellerinizi, fiyatlarınızı ve stok durumunuzu yönetin.</div>',
         unsafe_allow_html=True,
     )
 
     arama = st.text_input(
-        "🔎 Ürün Ara", placeholder="Ürün adı veya barkod..."
+        "🔎 Ürün Ara", placeholder="Mobilya adı veya barkod..."
     )
 
     filtre_df = df.copy()
@@ -621,11 +621,11 @@ elif menu_secim == "📦 Ürünler":
 
 elif menu_secim == "➕ Ürün Ekle":
     st.markdown(
-        '<div class="page-title">➕ Yeni Ürün</div>', unsafe_allow_html=True
+        '<div class="page-title">➕ Yeni Ürün Ekle</div>', unsafe_allow_html=True
     )
 
     st.markdown(
-        '<div class="page-subtitle">Yeni ürününüzü sisteme tanımlayın.</div>',
+        '<div class="page-subtitle">Yeni mobilya modelini sisteme tanımlayın.</div>',
         unsafe_allow_html=True,
     )
 
@@ -634,7 +634,7 @@ elif menu_secim == "➕ Ürün Ekle":
 
         with c1:
             yeni_ad = st.text_input(
-                "Ürün Adı *", placeholder="Örn: Coca Cola 2.5 L"
+                "Ürün Adı *", placeholder="Örn: Ares Köşe Koltuk"
             )
 
             yeni_barkod = st.text_input(
@@ -643,7 +643,7 @@ elif menu_secim == "➕ Ürün Ekle":
 
             yeni_birim = st.selectbox(
                 "Birim",
-                ["Adet", "Kg", "Gram", "Paket", "Koli", "Litre", "Metre"],
+                ["Takım", "Adet", "Set", "Modül"],
             )
 
         with c2:
@@ -758,13 +758,13 @@ elif menu_secim == "🧾 Faturalar":
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        st.metric("Bugünkü Faturalar", "18")
+        st.metric("Bugünkü Faturalar", "6")
 
     with c2:
-        st.metric("Satış Tutarı", "₺18.750")
+        st.metric("Satış Tutarı", "₺72.500")
 
     with c3:
-        st.metric("Alış Tutarı", "₺9.420")
+        st.metric("Alış Tutarı", "₺34.000")
 
     st.markdown(
         '<div class="section-title">Son Faturalar</div>',
@@ -774,16 +774,16 @@ elif menu_secim == "🧾 Faturalar":
     faturalar = pd.DataFrame([
         {
             "Fatura No": "SF-2026-00124",
-            "Cari": "ABC Market",
+            "Cari": "Ahmet Yılmaz",
             "Tür": "Satış",
-            "Tutar": 3250,
+            "Tutar": 22000,
             "Tarih": "24.08.2026",
         },
         {
             "Fatura No": "AF-2026-00081",
-            "Cari": "XYZ Gıda",
+            "Cari": "İnegöl Ahşap A.Ş.",
             "Tür": "Alış",
-            "Tutar": 1840,
+            "Tutar": 15000,
             "Tarih": "24.08.2026",
         },
     ])
@@ -804,26 +804,26 @@ elif menu_secim == "👥 Cari Hesaplar":
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        st.metric("Toplam Cari", "42")
+        st.metric("Toplam Cari", "28")
 
     with c2:
-        st.metric("Alacak", "₺84.250")
+        st.metric("Alacak", "₺145.000")
 
     with c3:
-        st.metric("Borç", "₺42.800")
+        st.metric("Borç", "₺62.000")
 
     cariler = pd.DataFrame([
         {
-            "Cari": "ABC Market",
+            "Cari": "Ahmet Yılmaz",
             "Telefon": "0532 *** ** **",
-            "Alacak": 12500,
-            "Borç": 2500,
+            "Alacak": 22000,
+            "Borç": 0,
         },
         {
-            "Cari": "XYZ Gıda",
-            "Telefon": "0544 *** ** **",
-            "Alacak": 5200,
-            "Borç": 8500,
+            "Cari": "İnegöl Ahşap A.Ş.",
+            "Telefon": "0224 *** ** **",
+            "Alacak": 0,
+            "Borç": 15000,
         },
     ])
 
@@ -842,26 +842,26 @@ elif menu_secim == "💰 Kasa":
     c1, c2, c3 = st.columns(3)
 
     with c1:
-        st.metric("Kasa Bakiyesi", "₺48.250")
+        st.metric("Kasa Bakiyesi", "₺112.500")
 
     with c2:
-        st.metric("Bugünkü Giriş", "₺12.450")
+        st.metric("Bugünkü Giriş", "₺44.500")
 
     with c3:
-        st.metric("Bugünkü Çıkış", "₺4.280")
+        st.metric("Bugünkü Çıkış", "₺15.000")
 
     kasa = pd.DataFrame([
         {
             "Tarih": "24.08.2026",
-            "Açıklama": "Satış",
-            "Giriş": 3250,
+            "Açıklama": "Peşin Mobilya Satışı",
+            "Giriş": 22000,
             "Çıkış": 0,
         },
         {
             "Tarih": "24.08.2026",
             "Açıklama": "Tedarikçi Ödemesi",
             "Giriş": 0,
-            "Çıkış": 1840,
+            "Çıkış": 15000,
         },
     ])
 
@@ -880,14 +880,14 @@ elif menu_secim == "🏦 Banka":
 
     banka = pd.DataFrame([
         {
-            "Banka": "Ziraat Bankası",
+            "Banka": "Garanti BBVA",
             "Hesap": "**** 4582",
-            "Bakiye": 125000,
+            "Bakiye": 210000,
         },
         {
-            "Banka": "İş Bankası",
+            "Banka": "Türkiye İş Bankası",
             "Hesap": "**** 7841",
-            "Bakiye": 84250,
+            "Bakiye": 95400,
         },
     ])
 
@@ -904,12 +904,12 @@ elif menu_secim == "📊 Raporlar":
     )
 
     st.markdown(
-        '<div class="section-title">Satış Performansı</div>',
+        '<div class="section-title">Haftalık Satış Performansı</div>',
         unsafe_allow_html=True,
     )
 
     satis = pd.DataFrame(
-        {"Satış": [8200, 10400, 9800, 12500, 14300, 16800, 12450]},
+        {"Satış": [32000, 41000, 38000, 45000, 52000, 68000, 44500]},
         index=["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"],
     )
 
@@ -951,11 +951,11 @@ elif menu_secim == "⚙️ Ayarlar":
         unsafe_allow_html=True,
     )
 
-    st.text_input("Firma Adı", value="Alp Bilge Yazılım")
+    st.text_input("Firma Adı", value="Hayal Mobilya")
 
     st.text_input("Telefon", value="444 43 19")
 
-    st.text_input("E-posta", value="info@alpbilgeyazilim.com")
+    st.text_input("E-posta", value="info@hayalmobilya.com")
 
     st.selectbox("Para Birimi", ["TL", "USD", "EUR"])
 
@@ -1011,8 +1011,8 @@ st.markdown(
 st.markdown(
     """
 <div class="footer">
-    © 2026 Alp Bilge Yazılım
-    • Ön Muhasebe Sistemi
+    © 2026 Hayal Mobilya
+    • Ön Muhasebe ve Stok Takip Sistemi
     • v2.0.0
 </div>
 """,
