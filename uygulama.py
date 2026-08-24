@@ -266,6 +266,25 @@ if "cariler" not in st.session_state:
         },
     ])
 
+# Banka Hesapları Veri Yapısı
+if "banka_hesaplari" not in st.session_state:
+    st.session_state.banka_hesaplari = pd.DataFrame([
+        {
+            "Banka Adı": "Garanti BBVA",
+            "Şube / Kod": "Edremit Şubesi (1234)",
+            "Hesap Adı": "Merkez Ticari Hesap",
+            "IBAN": "TR33 0006 2000 1230 0006 7890 12",
+            "Döviz": "TL",
+        },
+        {
+            "Banka Adı": "İş Bankası",
+            "Şube / Kod": "Akçay Şubesi (5678)",
+            "Hesap Adı": "Döviz / Euro Hesabı",
+            "IBAN": "TR88 0006 4000 0012 3456 7890 34",
+            "Döviz": "EUR",
+        },
+    ])
+
 if "faturalar" not in st.session_state:
     st.session_state.faturalar = []
 
@@ -329,6 +348,7 @@ menu_listesi = [
     "🧾 Satış Faturası Kes",
     "📄 Fatura / İrsaliye İşle",
     "👥 Cari Hesaplar & Borçlar",
+    "🏦 Banka Hesapları",
     "➕ Yeni Ürün Kartı Aç",
     "💰 Kasa & Finans",
     "📊 Raporlar & Analiz",
@@ -452,7 +472,6 @@ elif menu_secim == "🏠 Ana Sayfa":
     toplam_cesit = len(df_stok)
     toplam_adet = int(df_stok["Bakiye"].sum())
     maliyet_toplam = (df_stok["Alış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
-    satis_toplam = (df_stok["Satış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
 
     kritik_df = df_stok[df_stok["Bakiye"] <= df_stok["Kritik Sınır"]]
 
@@ -792,7 +811,69 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
 
 
 # =========================================================
-# 9. YENİ ÜRÜN KARTI AÇ (OTOMATİK VE RASTGELE BARKOD ÖZELLİKLİ)
+# 9. BANKA HESAPLARI & IBAN YÖNETİMİ (YENİ EKLENEN)
+# =========================================================
+
+elif menu_secim == "🏦 Banka Hesapları":
+    st.markdown(
+        '<div class="page-title">🏦 Banka Hesapları & IBAN Yönetimi</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Şirket banka hesaplarınızı yönetin ve IBAN bilgilerinizi takip edin.</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.dataframe(
+        st.session_state.banka_hesaplari,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.markdown("---")
+    st.markdown("#### ➕ Yeni Banka Hesabı / IBAN Ekle")
+    with st.form("yeni_banka_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            b_adi = st.text_input(
+                "Banka Adı *", placeholder="Örn: Yapı Kredi, Ziraat vb."
+            )
+            b_sube = st.text_input(
+                "Şube Adı / Kodu", placeholder="Örn: Edremit Şubesi (1542)"
+            )
+            b_hesap_adi = st.text_input(
+                "Hesap Açıklaması / Sahibi", placeholder="Örn: Ticari Vadesi Hesap"
+            )
+        with c2:
+            b_iban = st.text_input(
+                "IBAN Numarası *", placeholder="TR00 0000 0000 0000 0000 0000 00"
+            )
+            b_doviz = st.selectbox("Para Birimi", ["TL", "USD", "EUR", "GBP"])
+
+        if st.form_submit_button("💾 Banka Hesabını Kaydet"):
+            if b_adi and b_iban:
+                # IBAN format temizliği veya kontrolü eklenebilir
+                yeni_b = pd.DataFrame([{
+                    "Banka Adı": b_adi,
+                    "Şube / Kod": b_sube,
+                    "Hesap Adı": b_hesap_adi,
+                    "IBAN": b_iban.upper(),
+                    "Döviz": b_doviz,
+                }])
+                st.session_state.banka_hesaplari = pd.concat(
+                    [st.session_state.banka_hesaplari, yeni_b],
+                    ignore_index=True,
+                )
+                st.success(
+                    "Banka hesabı ve IBAN bilgisi başarıyla sisteme kaydedildi."
+                )
+                st.rerun()
+            else:
+                st.warning("Lütfen Banka Adı ve IBAN alanlarını doldurun.")
+
+
+# =========================================================
+# 10. YENİ ÜRÜN KARTI AÇ
 # =========================================================
 
 elif menu_secim == "➕ Yeni Ürün Kartı Aç":
@@ -801,7 +882,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
         unsafe_allow_html=True,
     )
 
-    # Oturumda bu sayfa için benzersiz rastgele barkod üretilmemişse üret
     if "random_barkod_uret" not in st.session_state:
         st.session_state.random_barkod_uret = "".join(
             [str(random.randint(0, 9)) for _ in range(13)]
@@ -811,13 +891,10 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
         c1, c2 = st.columns(2)
         with c1:
             u_ad = st.text_input("Ürün Model Adı *")
-
-            # Tamamen alakasız ve rastgele üretilen otomatik barkod
             u_barkod = st.text_input(
                 "Barkod Numarası (Otomatik Üretildi) *",
                 value=st.session_state.random_barkod_uret,
             )
-
             u_birim = st.selectbox("Birim", ["Takım", "Adet", "Set"])
         with c2:
             u_alis = st.number_input("Maliyet / Alış Fiyatı (TL)", min_value=0.0)
@@ -826,7 +903,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                 "Kritik Stok Uyarısı Sınırı", min_value=1, value=3
             )
 
-        # Yeni barkod üretme butonu (isteğe bağlı yenilemek için)
         kol1, kol2 = st.columns(2)
         with kol1:
             kaydet_buton = st.form_submit_button("💾 Ürünü Kataloğa Kaydet")
@@ -841,7 +917,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
 
         if kaydet_buton:
             if u_ad and u_barkod:
-                # Barkodun benzersiz olup olmadığını kontrol et
                 if u_barkod in st.session_state.stok["Barkod"].astype(
                     str
                 ).values:
@@ -861,7 +936,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                     st.session_state.stok = pd.concat(
                         [st.session_state.stok, yeni_satir], ignore_index=True
                     )
-                    # Kayıttan sonra sıradaki ürün için yeni rastgele barkod hazırla
                     st.session_state.random_barkod_uret = "".join(
                         [str(random.randint(0, 9)) for _ in range(13)]
                     )
@@ -874,7 +948,7 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
 
 
 # =========================================================
-# 10. KASA & FİNANS
+# 11. KASA & FİNANS
 # =========================================================
 
 elif menu_secim == "💰 Kasa & Finans":
@@ -887,7 +961,7 @@ elif menu_secim == "💰 Kasa & Finans":
 
 
 # =========================================================
-# 11. RAPORLAR & ANALİZ
+# 12. RAPORLAR & ANALİZ
 # =========================================================
 
 elif menu_secim == "📊 Raporlar & Analiz":
@@ -906,7 +980,7 @@ elif menu_secim == "📊 Raporlar & Analiz":
 
 
 # =========================================================
-# 12. ŞİFRE DEĞİŞTİR
+# 13. ŞİFRE DEĞİŞTİR
 # =========================================================
 
 elif menu_secim == "🔑 Şifre Değiştir":
