@@ -55,6 +55,39 @@ DB_PATH = "hayal_mobilya.db"
 
 def _db():
     conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+
+# =========================================================
+# MALZEME STOĞU - ÜRÜN STOĞUNDAN AYRI
+# =========================================================
+conn.execute("""
+CREATE TABLE IF NOT EXISTS malzemeler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    malzeme_adi TEXT NOT NULL UNIQUE,
+    birim TEXT NOT NULL DEFAULT 'Adet',
+    miktar REAL NOT NULL DEFAULT 0,
+    kritik_sinir REAL NOT NULL DEFAULT 0,
+    alis_fiyati REAL NOT NULL DEFAULT 0,
+    renk TEXT DEFAULT '',
+    tedarikci TEXT DEFAULT ''
+)
+""")
+conn.commit()
+
+def malzeme_df():
+    return pd.read_sql_query("""
+        SELECT
+            id AS ID,
+            malzeme_adi AS "Malzeme Adı",
+            birim AS "Birim",
+            miktar AS "Miktar",
+            kritik_sinir AS "Kritik Sınır",
+            alis_fiyati AS "Alış Fiyatı (TL)",
+            renk AS "Renk",
+            tedarikci AS "Tedarikçi"
+        FROM malzemeler
+        ORDER BY id DESC
+    """, conn)
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS app_data (
             data_key TEXT PRIMARY KEY,
@@ -332,7 +365,8 @@ st.sidebar.divider()
 
 menu_listesi = [
     "🏠 Ana Sayfa",
-    "📦 Ürün Kataloğu & Stok",
+    "📦 Ürün Stoğu",
+    "🧱 Malzeme Stoğu",
     "➕ Manuel Stok Ekle",
     "📄 PDF / E-Fatura İçe Aktar",
     "🔨 Hızlı İmalat / Stok Güncelle",
@@ -381,6 +415,16 @@ if menu_secim == "🏠 Ana Sayfa":
         st.session_state.global_stok["Bakiye"] <= st.session_state.global_stok["Kritik Sınır"]
     ]
     kritik_sayi = len(kritik_urunler)
+    try:
+        malzeme_ozet = malzeme_df()
+        toplam_malzeme_cesidi = len(malzeme_ozet)
+        kritik_malzeme_sayisi = int(
+            ((malzeme_ozet["Miktar"] <= malzeme_ozet["Kritik Sınır"]) &
+             (malzeme_ozet["Kritik Sınır"] > 0)).sum()
+        ) if not malzeme_ozet.empty else 0
+    except Exception:
+        toplam_malzeme_cesidi = 0
+        kritik_malzeme_sayisi = 0
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
@@ -411,9 +455,100 @@ elif menu_secim == "⚙️ Yönetici Paneli":
             st.info("Kayıtlı işlem logu bulunmuyor.")
 
 
-elif menu_secim == "📦 Ürün Kataloğu & Stok":
-    st.markdown('<div class="page-title">Ürün Kataloğu & Depo Envanteri</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">Tüm depodaki ürünlerin güncel ortak listesi.</div>', unsafe_allow_html=True)
+
+elif menu_secim == "🧱 Malzeme Stoğu":
+    st.markdown('<div class="page-title">Malzeme Stoğu</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-subtitle">Mobilya üretiminde kullanılan hammaddeler ve yardımcı malzemeler.</div>',
+        unsafe_allow_html=True
+    )
+
+    malzemeler = malzeme_df()
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric("Malzeme Çeşidi", len(malzemeler))
+    with c2:
+        toplam_malzeme = float(malzemeler["Miktar"].sum()) if not malzemeler.empty else 0
+        st.metric("Toplam Malzeme Miktarı", f"{toplam_malzeme:g}")
+
+    st.markdown("#### 📋 Mevcut Malzemeler")
+    if not malzemeler.empty:
+        st.dataframe(malzemeler, use_container_width=True, hide_index=True)
+    else:
+        st.info("Henüz malzeme stoğu bulunmuyor.")
+
+    st.markdown("#### ➕ Malzeme Ekle")
+    with st.form("malzeme_ekle_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            malzeme_adi = st.text_input("Malzeme Adı")
+            malzeme_birim = st.selectbox("Birim", ["Adet", "Metre", "m²", "m³", "Kg", "Litre", "Paket", "Kutu"])
+            malzeme_miktar = st.number_input("Miktar", min_value=0.0, step=1.0)
+            malzeme_kritik = st.number_input("Kritik Sınır", min_value=0.0, step=1.0)
+        with col2:
+            malzeme_alis = st.number_input("Alış Fiyatı (TL)", min_value=0.0, step=100.0)
+            malzeme_renk = st.text_input("Renk")
+            malzeme_tedarikci = st.text_input("Tedarikçi")
+
+        ekle_malzeme = st.form_submit_button("Malzemeyi Ortak Stoğa Kaydet", use_container_width=True)
+
+        if ekle_malzeme:
+            if not malzeme_adi.strip():
+                st.error("❌ Malzeme adı boş bırakılamaz.")
+            else:
+                try:
+                    conn.execute("""
+                        INSERT INTO malzemeler
+                        (malzeme_adi, birim, miktar, kritik_sinir, alis_fiyati, renk, tedarikci)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        malzeme_adi.strip(), malzeme_birim, malzeme_miktar,
+                        malzeme_kritik, malzeme_alis, malzeme_renk, malzeme_tedarikci
+                    ))
+                    conn.commit()
+                    st.success(f"✅ {malzeme_adi} ortak malzeme stoğuna eklendi.")
+                    st.rerun()
+                except sqlite3.IntegrityError:
+                    st.error("❌ Bu malzeme zaten kayıtlı.")
+
+    st.markdown("#### 🔄 Malzeme Stoğu Güncelle")
+    if not malzemeler.empty:
+        secilen_malzeme = st.selectbox(
+            "Malzeme Seç",
+            malzemeler["Malzeme Adı"].tolist(),
+            key="malzeme_guncelle_sec"
+        )
+        degisim = st.number_input(
+            "Eklenecek / Düşülecek Miktar",
+            value=0.0,
+            step=1.0,
+            help="Pozitif değer ekler, negatif değer stoktan düşer.",
+            key="malzeme_degisim"
+        )
+        if st.button("Malzeme Stoğunu Güncelle", use_container_width=True):
+            mevcut = conn.execute(
+                "SELECT miktar FROM malzemeler WHERE malzeme_adi = ?",
+                (secilen_malzeme,)
+            ).fetchone()
+
+            if mevcut:
+                yeni_miktar = float(mevcut[0]) + degisim
+                if yeni_miktar < 0:
+                    st.error("❌ Malzeme stoğu 0'ın altına düşemez.")
+                else:
+                    conn.execute(
+                        "UPDATE malzemeler SET miktar = ? WHERE malzeme_adi = ?",
+                        (yeni_miktar, secilen_malzeme)
+                    )
+                    conn.commit()
+                    st.success(f"✅ {secilen_malzeme} stoğu güncellendi.")
+                    st.rerun()
+
+
+elif menu_secim == "📦 Ürün Stoğu":
+    st.markdown('<div class="page-title">Ürün Stoğu</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">Satışa hazır ürünlerin güncel ortak stok listesi.</div>', unsafe_allow_html=True)
     st.dataframe(st.session_state.global_stok, use_container_width=True, hide_index=True)
 
 
