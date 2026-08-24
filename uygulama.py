@@ -172,7 +172,7 @@ if "global_personel_loglari" not in st.session_state:
 
 
 # =========================================================
-# 3. GİRİŞ EKRANI
+# 3. GİRİŞ EKRANI (BENİ HATIRLA ÖZELLİĞİ İLE)
 # =========================================================
 if not st.session_state.logged_in:
     st.markdown(
@@ -186,6 +186,7 @@ if not st.session_state.logged_in:
             with st.form("login_form"):
                 kullanici_adi = st.text_input("Kullanıcı Adı")
                 sifre = st.text_input("Şifre", type="password")
+                beni_hatirla = st.checkbox("Beni Hatırla")  # Geri getirilen özellik
                 submit = st.form_submit_button("Sisteme Giriş Yap", use_container_width=True)
 
                 if submit:
@@ -198,6 +199,8 @@ if not st.session_state.logged_in:
                         st.session_state.user_role = (
                             "Admin" if kullanici_adi in ["admin", "onur"] else "Personel"
                         )
+                        if beni_hatirla:
+                            st.info("ℹ️ 'Beni hatırla' aktif edildi.")
                         st.success("✅ Giriş başarılı!")
                         st.rerun()
                     else:
@@ -233,7 +236,7 @@ if not st.session_state.logged_in:
 
 
 # =========================================================
-# 4. SOL MENÜ (YETKİYE GÖRE DİNAMİK)
+# 4. SOL MENÜ (TÜM ÖZELLİKLER DAHİL)
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
 st.sidebar.caption("ERP & STOK YÖNETİMİ v3.4")
@@ -244,7 +247,7 @@ st.sidebar.markdown("**MENÜ**")
 menu_listesi = [
     "🏠 Ana Sayfa",
     "📦 Ürün Kataloğu & Stok",
-    "➕ Manuel Stok Ekle",  # İstediğiniz gibi geri eklendi
+    "➕ Manuel Stok Ekle",
     "🔨 Hızlı İmalat / Stok Güncelle",
     "📋 Stok Hareket Geçmişi",
     "🧾 Satış Faturası Kes",
@@ -394,7 +397,7 @@ elif menu_secim == "📦 Ürün Kataloğu & Stok":
     st.dataframe(st.session_state.global_stok, use_container_width=True, hide_index=True)
 
 
-# --- 4. MANUEL STOK EKLE (YENİDEN EKLENDİ) ---
+# --- 4. MANUEL STOK EKLE ---
 elif menu_secim == "➕ Manuel Stok Ekle":
     st.markdown('<div class="page-title">Manuel Stok Girişi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Depoya dışarıdan veya bağımsız olarak manuel miktar ekleyin.</div>', unsafe_allow_html=True)
@@ -550,7 +553,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
     st.markdown('<div class="page-title">Yeni Ürün Kartı Tanımla</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Kataloğa yeni bir mobilya modeli ekleyin (Barkod otomatik üretilir).</div>', unsafe_allow_html=True)
 
-    # Otomatik benzersiz barkod üretme
     otomatik_barkod = str(random.randint(8690000000000, 8699999999999))
 
     with st.form("yeni_urun_kart_form"):
