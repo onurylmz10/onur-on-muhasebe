@@ -269,7 +269,7 @@ if "faturalar" not in st.session_state:
 
 
 # =========================================================
-# GİRİŞ EKRANI (FORM HATALARINI ÖNLEYEN YAPI)
+# GİRİŞ EKRANI
 # =========================================================
 
 if not st.session_state.authenticated:
@@ -287,8 +287,9 @@ if not st.session_state.authenticated:
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # Değişken adı hatasını önlemek için standart isim kullanıldı
         kullanici_listesi = list(st.session_state.users.keys())
-        secilen_kullanici = st.selectbox("Kullanıcı Seçin", kullanıcı_listesi)
+        secilen_kullanici = st.selectbox("Kullanıcı Seçin", kullanici_listesi)
         k_sifre = st.text_input("Şifre", type="password")
         giris_btn = st.button("Sisteme Giriş Yap")
 
