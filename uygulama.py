@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 # =========================================================
-# 1. SAYFA YAPILANDIRMASI & KOYU TEMA STİLLERİ
+# 1. SAYFA YAPILANDIRMASI & MODERN KOYU TEMA STİLLERİ
 # =========================================================
 st.set_page_config(
     page_title="Hayal Mobilya ERP & Stok Yönetimi v3.4",
@@ -16,12 +16,37 @@ st.markdown(
     """
     <style>
     .main { background-color: #0e1117; color: #fafafa; }
-    .page-title { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 5px; }
-    .page-subtitle { font-size: 14px; color: #9ca3af; margin-bottom: 20px; }
-    .stat-card { background: #161b22; padding: 20px; border-radius: 10px; border: 1px solid #30363d; border-left: 4px solid #3b82f6; }
-    .stat-title { font-size: 12px; color: #9ca3af; font-weight: 600; text-transform: uppercase; }
-    .stat-value { font-size: 24px; font-weight: 700; color: #ffffff; margin-top: 5px; }
-    .stat-change { font-size: 11px; color: #34d399; margin-top: 5px; }
+    .page-title { font-size: 26px; font-weight: 800; color: #ffffff; margin-bottom: 2px; letter-spacing: -0.5px; }
+    .page-subtitle { font-size: 14px; color: #9ca3af; margin-bottom: 25px; }
+    
+    /* Modern Kart Tasarımları */
+    .metric-card {
+        background: linear-gradient(135deg, #161b22 0%, #1f242d 100%);
+        padding: 22px;
+        border-radius: 14px;
+        border: 1px solid #30363d;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: transform 0.2s ease;
+    }
+    .metric-card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-2px);
+    }
+    .metric-title { font-size: 13px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-value { font-size: 28px; font-weight: 800; color: #ffffff; margin-top: 8px; }
+    .metric-footer { font-size: 12px; color: #34d399; margin-top: 8px; font-weight: 500; }
+    .metric-footer.danger { color: #ef4444; }
+
+    .section-header {
+        font-size: 18px;
+        font-weight: 700;
+        color: #f3f4f6;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 8px;
+    }
+    
     .footer { text-align: center; margin-top: 60px; font-size: 11px; color: #6b7280; border-top: 1px solid #30363d; padding-top: 15px; }
     </style>
 """,
@@ -188,7 +213,7 @@ if not st.session_state.logged_in:
 
 
 # =========================================================
-# 4. SOL MENÜ
+# 4. SOL MENÜ (EMOJİLİ)
 # =========================================================
 st.sidebar.markdown("### 🪑 HAYAL MOBİLYA")
 st.sidebar.caption("ERP & STOK YÖNETİMİ v3.4")
@@ -198,19 +223,19 @@ st.sidebar.markdown("**MENÜ**")
 menu_secim = st.sidebar.radio(
     "Navigasyon",
     [
-        "Ana Sayfa",
-        "Yönetici Paneli",
-        "Ürün Kataloğu & Stok",
-        "Hızlı İmalat / Stok Güncelle",
-        "Stok Hareket Geçmişi",
-        "Satış Faturası Kes",
-        "Fatura / İrsaliye İşle",
-        "Cari Hesaplar & Borçlar",
-        "Banka Hesapları",
-        "Yeni Ürün Kartı Aç",
-        "Kasa & Finans",
-        "Raporlar & Analiz",
-        "Şifre Değiştir",
+        "🏠 Ana Sayfa",
+        "⚙️ Yönetici Paneli",
+        "📦 Ürün Kataloğu & Stok",
+        "🔨 Hızlı İmalat / Stok Güncelle",
+        "📋 Stok Hareket Geçmişi",
+        "🧾 Satış Faturası Kes",
+        "📄 Fatura / İrsaliye İşle",
+        "🤝 Cari Hesaplar & Borçlar",
+        "🏦 Banka Hesapları",
+        "➕ Yeni Ürün Kartı Aç",
+        "💰 Kasa & Finans",
+        "📊 Raporlar & Analiz",
+        "🔒 Şifre Değiştir",
     ],
     label_visibility="collapsed",
 )
@@ -219,7 +244,7 @@ st.sidebar.divider()
 st.sidebar.markdown(f"👤 **{st.session_state.current_user.capitalize()}**")
 st.sidebar.caption("Sistem Yöneticisi" if st.session_state.user_role == "Admin" else "Personel")
 
-if st.sidebar.button("🔒 Güvenli Çıkış", use_container_width=True):
+if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.current_user = ""
     st.session_state.user_role = ""
@@ -230,10 +255,10 @@ if st.sidebar.button("🔒 Güvenli Çıkış", use_container_width=True):
 # 5. SAYFA İÇERİKLERİ
 # =========================================================
 
-# --- 1. ANA SAYFA & DASHBOARD ---
-if menu_secim == "Ana Sayfa":
-    st.markdown('<div class="page-title">Kontrol Paneli (Dashboard)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-subtitle">İmalat ve stok performansının genel özeti.</div>', unsafe_allow_html=True)
+# --- 1. ANA SAYFA & DASHBOARD (MODERNLENDİRİLDİ) ---
+if menu_secim == "🏠 Ana Sayfa":
+    st.markdown('<div class="page-title">Genel Kontrol Paneli</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-subtitle">İmalat, stok ve finansal performansın anlık özeti.</div>', unsafe_allow_html=True)
 
     toplam_urun_cesidi = len(st.session_state.global_stok)
     toplam_stok_miktari = int(st.session_state.global_stok["Bakiye"].sum())
@@ -242,26 +267,69 @@ if menu_secim == "Ana Sayfa":
         st.session_state.global_stok["Bakiye"] <= st.session_state.global_stok["Kritik Sınır"]
     ]
     kritik_sayi = len(kritik_urunler)
+    toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if len(st.session_state.global_faturalar) > 0 else 0.0
 
+    # 1. Satır Metrik Kartları
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f"""<div class="stat-card"><div class="stat-title">Ürün Çeşidi</div><div class="stat-value">{toplam_urun_cesidi}</div><div class="stat-change">↑ Aktif Katalog</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">📦 Aktif Ürün Çeşidi</div>
+                <div class="metric-value">{toplam_urun_cesidi}</div>
+                <div class="metric-footer">Katalogda kayıtlı</div>
+            </div>
+        """, unsafe_allow_html=True)
     with c2:
-        st.markdown(f"""<div class="stat-card"><div class="stat-title">Toplam Stok Adedi</div><div class="stat-value">{toplam_stok_miktari}</div><div class="stat-change">↑ Ürün Miktarı</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">📊 Toplam Stok Adedi</div>
+                <div class="metric-value">{toplam_stok_miktari}</div>
+                <div class="metric-footer">Depodaki toplam ürün</div>
+            </div>
+        """, unsafe_allow_html=True)
     with c3:
-        st.markdown(f"""<div class="stat-card"><div class="stat-title">Stok Maliyet Değeri</div><div class="stat-value">₺{toplam_maliyet:,}</div><div class="stat-change">↑ Yatırım Tutarı</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-title">💰 Stok Maliyet Değeri</div>
+                <div class="metric-value">₺{toplam_maliyet:,}</div>
+                <div class="metric-footer">Toplam yatırım</div>
+            </div>
+        """, unsafe_allow_html=True)
     with c4:
-        st.markdown(f"""<div class="stat-card" style="border-left-color: #ef4444;"><div class="stat-title">Kritik Stok Uyarı</div><div class="stat-value">{kritik_sayi}</div><div class="stat-change" style="color:#ef4444;">↑ Acil Üretim Gereken</div></div>""", unsafe_allow_html=True)
+        danger_class = "danger" if kritik_sayi > 0 else ""
+        st.markdown(f"""
+            <div class="metric-card" style="border-left: 4px solid {'#ef4444' if kritik_sayi > 0 else '#3b82f6'};">
+                <div class="metric-title">🚨 Kritik Stok Uyarı</div>
+                <div class="metric-value">{kritik_sayi}</div>
+                <div class="metric-footer {danger_class}">{'Acil üretim gerekli!' if kritik_sayi > 0 else 'Seviyeler normal'}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("#### 🚨 Kritik Eşiğindeki Ürünler")
-    if kritik_sayi > 0:
-        st.dataframe(kritik_urunler, use_container_width=True, hide_index=True)
-    else:
-        st.success("Kritik seviyede ürün bulunmuyor.")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # İkinci Metrik & Özet Satırı
+    col_ Sol, col_Sag = st.columns([1.2, 1])
+    with col_Sol:
+        st.markdown('<div class="section-header">🚨 Kritik Eşiğindeki Ürünler</div>', unsafe_allow_html=True)
+        if kritik_sayi > 0:
+            st.dataframe(kritik_urunler[["Ürün Adı", "Bakiye", "Kritik Sınır", "Birim"]], use_container_width=True, hide_index=True)
+        else:
+            st.success("Harika! Kritik seviyede ürün bulunmuyor.")
+
+    with col_Sag:
+        st.markdown('<div class="section-header">⚡ Hızlı İşlem Kısayolları</div>', unsafe_allow_html=True)
+        sc1, sc2 = st.columns(2)
+        with sc1:
+            if st.button("🔨 Hızlı İmalat Aç", use_container_width=True):
+                pass
+        with sc2:
+            if st.button("🧾 Fatura Kes", use_container_width=True):
+                pass
+        st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı.")
 
 
 # --- 2. YÖNETİCİ PANELİ ---
-elif menu_secim == "Yönetici Paneli":
+elif menu_secim == "⚙️ Yönetici Paneli":
     st.markdown('<div class="page-title">Yönetici Kontrol Paneli</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Sistem yetkileri, kullanıcı yönetimi ve genel log kayıtları.</div>', unsafe_allow_html=True)
 
@@ -280,14 +348,14 @@ elif menu_secim == "Yönetici Paneli":
 
 
 # --- 3. ÜRÜN KATALOĞU & STOK ---
-elif menu_secim == "Ürün Kataloğu & Stok":
+elif menu_secim == "📦 Ürün Kataloğu & Stok":
     st.markdown('<div class="page-title">Ürün Kataloğu & Depo Envanteri</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Tüm depodaki ürünlerin güncel listesi ve fiyatları.</div>', unsafe_allow_html=True)
     st.dataframe(st.session_state.global_stok, use_container_width=True, hide_index=True)
 
 
 # --- 4. HIZLI İMALAT / STOK GÜNCELLE ---
-elif menu_secim == "Hızlı İmalat / Stok Güncelle":
+elif menu_secim == "🔨 Hızlı İmalat / Stok Güncelle":
     st.markdown('<div class="page-title">Hızlı İmalat & Stok Güncelleme</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Üretimden çıkan ürünleri depoya ekleyin veya düşün.</div>', unsafe_allow_html=True)
 
@@ -319,7 +387,7 @@ elif menu_secim == "Hızlı İmalat / Stok Güncelle":
 
 
 # --- 5. STOK HAREKET GEÇMİŞİ ---
-elif menu_secim == "Stok Hareket Geçmişi":
+elif menu_secim == "📋 Stok Hareket Geçmişi":
     st.markdown('<div class="page-title">Stok Hareket Geçmişi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Geçmişte yapılan imalat ve depo çıkış logları.</div>', unsafe_allow_html=True)
     if len(st.session_state.global_personel_loglari) > 0:
@@ -329,7 +397,7 @@ elif menu_secim == "Stok Hareket Geçmişi":
 
 
 # --- 6. SATIŞ FATURASI KES ---
-elif menu_secim == "Satış Faturası Kes":
+elif menu_secim == "🧾 Satış Faturası Kes":
     st.markdown('<div class="page-title">Satış Faturası Kes</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Müşterilere resmi fatura düzenleme ekranı.</div>', unsafe_allow_html=True)
 
@@ -355,7 +423,7 @@ elif menu_secim == "Satış Faturası Kes":
 
 
 # --- 7. FATURA / İRSALİYE İŞLE ---
-elif menu_secim == "Fatura / İrsaliye İşle":
+elif menu_secim == "📄 Fatura / İrsaliye İşle":
     st.markdown('<div class="page-title">Fatura / İrsaliye İşlemleri</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Gelen tedarikçi irsaliyeleri ve fatura kayıtları.</div>', unsafe_allow_html=True)
 
@@ -382,7 +450,7 @@ elif menu_secim == "Fatura / İrsaliye İşle":
 
 
 # --- 8. CARİ HESAPLAR & BORÇLAR ---
-elif menu_secim == "Cari Hesaplar & Borçlar":
+elif menu_secim == "🤝 Cari Hesaplar & Borçlar":
     st.markdown('<div class="page-title">Cari Hesaplar & Borç / Alacak</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Müşteri ve tedarikçilerin güncel bakiye durumları.</div>', unsafe_allow_html=True)
 
@@ -404,14 +472,14 @@ elif menu_secim == "Cari Hesaplar & Borçlar":
 
 
 # --- 9. BANKA HESAPLARI ---
-elif menu_secim == "Banka Hesapları":
+elif menu_secim == "🏦 Banka Hesapları":
     st.markdown('<div class="page-title">Banka Hesapları & IBAN Listesi</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ticari banka hesapları ve IBAN bilgileri.</div>', unsafe_allow_html=True)
     st.dataframe(st.session_state.global_banka_hesaplari, use_container_width=True, hide_index=True)
 
 
 # --- 10. YENİ ÜRÜN KARTI AÇ ---
-elif menu_secim == "Yeni Ürün Kartı Aç":
+elif menu_secim == "➕ Yeni Ürün Kartı Aç":
     st.markdown('<div class="page-title">Yeni Ürün Kartı Tanımla</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Kataloğa yeni bir mobilya modeli ekleyin.</div>', unsafe_allow_html=True)
 
@@ -441,28 +509,28 @@ elif menu_secim == "Yeni Ürün Kartı Aç":
 
 
 # --- 11. KASA & FİNANS ---
-elif menu_secim == "Kasa & Finans":
+elif menu_secim == "💰 Kasa & Finans":
     st.markdown('<div class="page-title">Kasa & Finansal Durum</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Şirket ciro ve nakit akışı raporu.</div>', unsafe_allow_html=True)
 
     toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if len(st.session_state.global_faturalar) > 0 else 0.0
     f1, f2 = st.columns(2)
     with f1:
-        st.markdown(f"""<div class="stat-card"><div class="stat-title">Toplam Fatura Cirosu</div><div class="stat-value">₺{toplam_ciro:,.2f}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-card"><div class="metric-title">Toplam Fatura Cirosu</div><div class="metric-value">₺{toplam_ciro:,.2f}</div></div>""", unsafe_allow_html=True)
     with f2:
         depo_deger = (st.session_state.global_stok["Satış Fiyatı (TL)"] * st.session_state.global_stok["Bakiye"]).sum()
-        st.markdown(f"""<div class="stat-card"><div class="stat-title">Toplam Depo Satış Potansiyeli</div><div class="stat-value">₺{depo_deger:,.2f}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-card"><div class="metric-title">Toplam Depo Satış Potansiyeli</div><div class="metric-value">₺{depo_deger:,.2f}</div></div>""", unsafe_allow_html=True)
 
 
 # --- 12. RAPORLAR & ANALİZ ---
-elif menu_secim == "Raporlar & Analiz":
+elif menu_secim == "📊 Raporlar & Analiz":
     st.markdown('<div class="page-title">Raporlar & Analiz</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Stok ve ürün dağılım grafikleri.</div>', unsafe_allow_html=True)
     st.bar_chart(st.session_state.global_stok.set_index("Ürün Adı")["Bakiye"])
 
 
 # --- 13. ŞİFRE DEĞİŞTİR ---
-elif menu_secim == "Şifre Değiştir":
+elif menu_secim == "🔒 Şifre Değiştir":
     st.markdown('<div class="page-title">Şifre Değiştir</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">Oturum açan hesap şifresini güncelleyin.</div>', unsafe_allow_html=True)
 
