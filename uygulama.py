@@ -255,7 +255,7 @@ if st.sidebar.button("🚪 Güvenli Çıkış", use_container_width=True):
 # 5. SAYFA İÇERİKLERİ
 # =========================================================
 
-# --- 1. ANA SAYFA & DASHBOARD (MODERNLENDİRİLDİ) ---
+# --- 1. ANA SAYFA & DASHBOARD ---
 if menu_secim == "🏠 Ana Sayfa":
     st.markdown('<div class="page-title">Genel Kontrol Paneli</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-subtitle">İmalat, stok ve finansal performansın anlık özeti.</div>', unsafe_allow_html=True)
@@ -307,16 +307,16 @@ if menu_secim == "🏠 Ana Sayfa":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # İkinci Metrik & Özet Satırı
-    col_ Sol, col_Sag = st.columns([1.2, 1])
-    with col_Sol:
+    # İkinci Metrik & Özet Satırı (Hatası düzeltilen kısım)
+    col_sol, col_sag = st.columns([1.2, 1])
+    with col_sol:
         st.markdown('<div class="section-header">🚨 Kritik Eşiğindeki Ürünler</div>', unsafe_allow_html=True)
         if kritik_sayi > 0:
             st.dataframe(kritik_urunler[["Ürün Adı", "Bakiye", "Kritik Sınır", "Birim"]], use_container_width=True, hide_index=True)
         else:
             st.success("Harika! Kritik seviyede ürün bulunmuyor.")
 
-    with col_Sag:
+    with col_sag:
         st.markdown('<div class="section-header">⚡ Hızlı İşlem Kısayolları</div>', unsafe_allow_html=True)
         sc1, sc2 = st.columns(2)
         with sc1:
