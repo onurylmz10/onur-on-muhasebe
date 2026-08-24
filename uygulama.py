@@ -224,7 +224,6 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 if "users" not in st.session_state:
-    # Varsayılan kullanıcılar (Admin ve standart personel)
     st.session_state.users = {"onur": "1234", "admin": "123456"}
 
 if "personel_loglari" not in st.session_state:
@@ -274,7 +273,7 @@ if "faturalar" not in st.session_state:
 
 
 # =========================================================
-# GİRİŞ EKRANI (EĞER GİRİŞ YAPILMADIYSA)
+# GİRİŞ EKRANI
 # =========================================================
 
 if not st.session_state.authenticated:
@@ -305,13 +304,11 @@ if not st.session_state.authenticated:
                     st.session_state.authenticated = True
                     st.session_state.current_user = k_adi.strip().capitalize()
 
-                    # Admin kontrolü
                     if k_adi_clean == "admin":
                         st.session_state.is_admin = True
                     else:
                         st.session_state.is_admin = False
 
-                    # Giriş logunu kaydet
                     zaman_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     st.session_state.personel_loglari.insert(
                         0,
@@ -329,11 +326,11 @@ if not st.session_state.authenticated:
                         "❌ Hatalı kullanıcı adı veya şifre! Lütfen yöneticinizden bilgi alınız."
                     )
 
-    st.stop()  # Giriş yapılmadıysa uygulamanın geri kalanını çalıştırma
+    st.stop()
 
 
 # =========================================================
-# ANA UYGULAMA (GİRİŞ YAPILDIKTAN SONRA)
+# ANA UYGULAMA
 # =========================================================
 
 menu_listesi = [
@@ -352,7 +349,6 @@ menu_listesi = [
     "⚙️ Ayarlar",
 ]
 
-# Eğer giriş yapan kişi admin ise özel yönetici paneli menüye eklenir
 if st.session_state.is_admin:
     menu_listesi.insert(1, "🔒 Yönetici Paneli")
 
@@ -458,7 +454,6 @@ if menu_secim == "🔒 Yönetici Paneli":
         unsafe_allow_html=True,
     )
 
-    # Sekmeler: Personel Ekleme / Log Takibi
     tab_loglar, tab_personel_ekle = st.tabs([
         "🕒 Personel Giriş/Çıkış Logları",
         "➕ Yeni Personel Tanımla",
@@ -504,7 +499,7 @@ if menu_secim == "🔒 Yönetici Paneli":
             unsafe_allow_html=True,
         )
         with st.form("admin_yeni_personel_form"):
-             yeni_p_kullanici = st.text_input(
+            yeni_p_kullanici = st.text_input(
                 "Personel Kullanıcı Adı (Giriş için)"
             )
             yeni_p_sifre = st.text_input(
