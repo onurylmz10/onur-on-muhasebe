@@ -140,15 +140,35 @@ if "global_banka_hesaplari" not in st.session_state:
         ]
     )
 
-# Fatura ve Loglar
+# Fatura ve Loglar (Örnek başlangıç verileri ile dolu)
 if "global_faturalar" not in st.session_state:
-    st.session_state.global_faturalar = []
+    st.session_state.global_faturalar = [
+        {
+            "Tarih": "2026-08-24 14:10",
+            "Müşteri": "Ahmet Mobilya Ltd. Şti.",
+            "Ürün": "Viyana Köşe Koltuk Takımı",
+            "Adet": 2,
+            "Toplam": 44400.0,
+            "Kesen": "admin",
+        }
+    ]
+
 if "global_stok_hareketleri" not in st.session_state:
     st.session_state.global_stok_hareketleri = []
+
 if "global_irsaliyeler" not in st.session_state:
     st.session_state.global_irsaliyeler = []
+
 if "global_personel_loglari" not in st.session_state:
-    st.session_state.global_personel_loglari = []
+    st.session_state.global_personel_loglari = [
+        {
+            "Zaman": "2026-08-24 11:30:15",
+            "Personel": "onur",
+            "Ürün": "Liva Zigon Sehpa Seti",
+            "İşlem": "Üretimden Ekle (+)",
+            "Miktar": 5,
+        }
+    ]
 
 
 # =========================================================
@@ -221,7 +241,6 @@ st.sidebar.divider()
 
 st.sidebar.markdown("**MENÜ**")
 
-# Ortak menü listesi
 menu_listesi = [
     "🏠 Ana Sayfa",
     "📦 Ürün Kataloğu & Stok",
@@ -237,7 +256,6 @@ menu_listesi = [
     "🔒 Şifre Değiştir",
 ]
 
-# Eğer kullanıcı Admin ise Yönetici Paneli seçeneğini ekle
 if st.session_state.user_role == "Admin":
     menu_listesi.insert(1, "⚙️ Yönetici Paneli")
 
@@ -274,7 +292,6 @@ if menu_secim == "🏠 Ana Sayfa":
         st.session_state.global_stok["Bakiye"] <= st.session_state.global_stok["Kritik Sınır"]
     ]
     kritik_sayi = len(kritik_urunler)
-    toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if len(st.session_state.global_faturalar) > 0 else 0.0
 
     # 1. Satır Metrik Kartları
     c1, c2, c3, c4 = st.columns(4)
@@ -314,7 +331,7 @@ if menu_secim == "🏠 Ana Sayfa":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # İkinci Metrik & Özet Satırı
+    # İkinci Satır (Kritik Eşik & Hızlı İşlem Kısayolları)
     col_sol, col_sag = st.columns([1.2, 1])
     with col_sol:
         st.markdown('<div class="section-header">🚨 Kritik Eşiğindeki Ürünler</div>', unsafe_allow_html=True)
@@ -333,6 +350,24 @@ if menu_secim == "🏠 Ana Sayfa":
             if st.button("🧾 Fatura Kes", use_container_width=True):
                 pass
         st.info(f"💡 Aktif Oturum: **{st.session_state.current_user.capitalize()}** ({st.session_state.user_role}) olarak bağlı.")
+
+    # Üçüncü Satır (Doldurulan Yeni Veri Bölümleri)
+    st.markdown("<br>", unsafe_allow_html=True)
+    tab_sol, tab_sag = st.columns(2)
+    
+    with tab_sol:
+        st.markdown('<div class="section-header">📋 Son Stok & İmalat Hareketleri</div>', unsafe_allow_html=True)
+        if len(st.session_state.global_personel_loglari) > 0:
+            st.dataframe(pd.DataFrame(st.session_state.global_personel_loglari), use_container_width=True, hide_index=True)
+        else:
+            st.info("Henüz son hareket bulunmuyor.")
+
+    with tab_sag:
+        st.markdown('<div class="section-header">🧾 Son Kesilen Faturalar</div>', unsafe_allow_html=True)
+        if len(st.session_state.global_faturalar) > 0:
+            st.dataframe(pd.DataFrame(st.session_state.global_faturalar), use_container_width=True, hide_index=True)
+        else:
+            st.info("Kayıtlı fatura bulunmuyor.")
 
 
 # --- 2. YÖNETİCİ PANELİ (SADECE ADMIN) ---
@@ -418,7 +453,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
         if kes_btn:
             fiyat = float(st.session_state.global_stok.loc[st.session_state.global_stok["Ürün Adı"] == u_sec, "Satış Fiyatı (TL)"].values[0])
             tutar = fiyat * mik * (1 + kdv / 100.0)
-            st.session_state.global_faturalar.append({
+            st.session_state.global_faturalar.insert(0, {
                 "Tarih": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Müşteri": m_sec,
                 "Ürün": u_sec,
@@ -427,6 +462,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                 "Kesen": st.session_state.current_user
             })
             st.success(f"✅ {m_sec} adına ₺{tutar:,.2f} tutarlı fatura kesildi!")
+            st.rerun()
 
 
 # --- 7. FATURA / İRSALİYE İŞLE ---
