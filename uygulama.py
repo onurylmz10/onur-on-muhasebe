@@ -309,34 +309,37 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if not st.session_state.sifre_unuttum_aktif:
-            secilen_kullanici = st.selectbox(
-                "Kullanıcı Seçin", list(st.session_state.users.keys())
-            )
-            k_sifre = st.text_input("Şifre", type="password")
-            
-            if st.button("Güvenli Giriş Yap"):
-                if (
-                    secilen_kullanici in st.session_state.users
-                    and st.session_state.users[secilen_kullanici] == k_sifre
-                ):
-                    st.session_state.authenticated = True
-                    st.session_state.current_user = secilen_kullanici
-                    st.session_state.is_admin = (
-                        secilen_kullanici.lower() == "admin"
-                    )
+            with st.form("giris_formu"):
+                secilen_kullanici = st.selectbox(
+                    "Kullanıcı Seçin", list(st.session_state.users.keys()), key="giris_kullanici_sec"
+                )
+                k_sifre = st.text_input("Şifre", type="password", key="giris_sifre_input")
+                
+                giris_buton = st.form_submit_button("Güvenli Giriş Yap")
 
-                    st.session_state.personel_loglari.insert(
-                        0,
-                        {
-                            "Kullanıcı": secilen_kullanici,
-                            "İşlem": "Giriş Yapıldı",
-                            "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        },
-                    )
-                    st.success("Giriş başarılı, yönlendiriliyorsunuz...")
-                    st.rerun()
-                else:
-                    st.error("Hatalı şifre girdiniz.")
+                if giris_buton:
+                    if (
+                        secilen_kullanici in st.session_state.users
+                        and st.session_state.users[secilen_kullanici] == k_sifre
+                    ):
+                        st.session_state.authenticated = True
+                        st.session_state.current_user = secilen_kullanici
+                        st.session_state.is_admin = (
+                            secilen_kullanici.lower() == "admin"
+                        )
+
+                        st.session_state.personel_loglari.insert(
+                            0,
+                            {
+                                "Kullanıcı": secilen_kullanici,
+                                "İşlem": "Giriş Yapıldı",
+                                "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            },
+                        )
+                        st.success("Giriş başarılı, yönlendiriliyorsunuz...")
+                        st.rerun()
+                    else:
+                        st.error("Hatalı şifre girdiniz.")
 
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("🔑 Şifremi Unuttum"):
@@ -344,32 +347,35 @@ if not st.session_state.authenticated:
                 st.rerun()
         else:
             st.markdown("### Şifre Sıfırlama")
-            s_kullanici = st.selectbox(
-                "Kullanıcı Seçin", list(st.session_state.users.keys()), key="sifirla_kullanici"
-            )
-            yeni_sifre_1 = st.text_input("Yeni Şifre", type="password", key="y_sifre1")
-            yeni_sifre_2 = st.text_input("Yeni Şifre (Tekrar)", type="password", key="y_sifre2")
+            with st.form("sifre_sifirla_formu"):
+                s_kullanici = st.selectbox(
+                    "Kullanıcı Seçin", list(st.session_state.users.keys()), key="sifirla_kullanici"
+                )
+                yeni_sifre_1 = st.text_input("Yeni Şifre", type="password", key="y_sifre1")
+                yeni_sifre_2 = st.text_input("Yeni Şifre (Tekrar)", type="password", key="y_sifre2")
 
-            if st.button("Şifreyi Güncelle ve Giriş Yap"):
-                if yeni_sifre_1 and yeni_sifre_1 == yeni_sifre_2:
-                    st.session_state.users[s_kullanici] = yeni_sifre_1
-                    st.session_state.authenticated = True
-                    st.session_state.current_user = s_kullanici
-                    st.session_state.is_admin = (s_kullanici.lower() == "admin")
-                    st.session_state.sifre_unuttum_aktif = False
+                sifre_guncelle_buton = st.form_submit_button("Şifreyi Güncelle ve Giriş Yap")
 
-                    st.session_state.personel_loglari.insert(
-                        0,
-                        {
-                            "Kullanıcı": s_kullanici,
-                            "İşlem": "Şifre Sıfırlandı ve Giriş Yapıldı",
-                            "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        },
-                    )
-                    st.success("Şifreniz başarıyla güncellendi, sisteme giriş yapılıyor...")
-                    st.rerun()
-                else:
-                    st.error("Yeni şifreler boş olamaz ve birbiriyle uyuşmalıdır!")
+                if sifre_guncelle_buton:
+                    if yeni_sifre_1 and yeni_sifre_1 == yeni_sifre_2:
+                        st.session_state.users[s_kullanici] = yeni_sifre_1
+                        st.session_state.authenticated = True
+                        st.session_state.current_user = s_kullanici
+                        st.session_state.is_admin = (s_kullanici.lower() == "admin")
+                        st.session_state.sifre_unuttum_aktif = False
+
+                        st.session_state.personel_loglari.insert(
+                            0,
+                            {
+                                "Kullanıcı": s_kullanici,
+                                "İşlem": "Şifre Sıfırlandı ve Giriş Yapıldı",
+                                "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            },
+                        )
+                        st.success("Şifreniz başarıyla güncellendi, sisteme giriş yapılıyor...")
+                        st.rerun()
+                    else:
+                        st.error("Yeni şifreler boş olamaz ve birbiriyle uyuşmalıdır!")
 
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("⬅️ Geri Dön (Giriş Ekranına Git)"):
