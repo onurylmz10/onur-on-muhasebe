@@ -183,36 +183,21 @@ textarea {
 
 
 # =========================================================
-# OTURUM VE VERİ YÖNETİMİ
+# ORTAK GLOBAL VERİTABANI (TÜM KULLANICILAR İÇİN ORTAK)
 # =========================================================
 
-query_params = st.query_params
-if "auth_user" in query_params and "authenticated" not in st.session_state:
-    st.session_state.authenticated = True
-    st.session_state.current_user = query_params["auth_user"]
-    st.session_state.is_admin = query_params["auth_user"].lower() == "admin"
-
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if "current_user" not in st.session_state:
-    st.session_state.current_user = ""
-
-if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
-
-if "users" not in st.session_state:
-    st.session_state.users = {
+if "global_users" not in st.session_state:
+    st.session_state.global_users = {
         "Onur": "1234",
         "Admin": "123456",
         "Agam": "1234",
     }
 
-if "personel_loglari" not in st.session_state:
-    st.session_state.personel_loglari = []
+if "global_personel_loglari" not in st.session_state:
+    st.session_state.global_personel_loglari = []
 
-if "stok_hareketleri" not in st.session_state:
-    st.session_state.stok_hareketleri = [
+if "global_stok_hareketleri" not in st.session_state:
+    st.session_state.global_stok_hareketleri = [
         {
             "Zaman": "2026-08-24 08:30:00",
             "Personel": "Admin",
@@ -222,9 +207,8 @@ if "stok_hareketleri" not in st.session_state:
         }
     ]
 
-# Stok Verisinin Kalıcı Hafızada Tutulması (Sayfa yenilense dahi uçmaz)
-if "stok" not in st.session_state:
-    st.session_state.stok = pd.DataFrame([
+if "global_stok" not in st.session_state:
+    st.session_state.global_stok = pd.DataFrame([
         {
             "Ürün Adı": "Luna Koltuk Takımı",
             "Barkod": "8690576896745",
@@ -254,11 +238,11 @@ if "stok" not in st.session_state:
         },
     ])
 
-if "Kritik Sınır" not in st.session_state.stok.columns:
-    st.session_state.stok["Kritik Sınır"] = 3
+if "Kritik Sınır" not in st.session_state.global_stok.columns:
+    st.session_state.global_stok["Kritik Sınır"] = 3
 
-if "cariler" not in st.session_state:
-    st.session_state.cariler = pd.DataFrame([
+if "global_cariler" not in st.session_state:
+    st.session_state.global_cariler = pd.DataFrame([
         {
             "Cari Adı": "Ahmet Yılmaz (Perakende)",
             "Telefon": "0532 111 2233",
@@ -273,8 +257,8 @@ if "cariler" not in st.session_state:
         },
     ])
 
-if "banka_hesaplari" not in st.session_state:
-    st.session_state.banka_hesaplari = pd.DataFrame([
+if "global_banka_hesaplari" not in st.session_state:
+    st.session_state.global_banka_hesaplari = pd.DataFrame([
         {
             "Banka Adı": "Garanti BBVA",
             "Şube / Kod": "Edremit Şubesi (1234)",
@@ -291,11 +275,26 @@ if "banka_hesaplari" not in st.session_state:
         },
     ])
 
-if "faturalar" not in st.session_state:
-    st.session_state.faturalar = []
+if "global_faturalar" not in st.session_state:
+    st.session_state.global_faturalar = []
 
 if "sifre_unuttum_aktif" not in st.session_state:
     st.session_state.sifre_unuttum_aktif = False
+
+query_params = st.query_params
+if "auth_user" in query_params and "authenticated" not in st.session_state:
+    st.session_state.authenticated = True
+    st.session_state.current_user = query_params["auth_user"]
+    st.session_state.is_admin = query_params["auth_user"].lower() == "admin"
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if "current_user" not in st.session_state:
+    st.session_state.current_user = ""
+
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
 
 
 # =========================================================
@@ -318,7 +317,7 @@ if not st.session_state.authenticated:
         if not st.session_state.sifre_unuttum_aktif:
             with st.form("giris_formu"):
                 secilen_kullanici = st.selectbox(
-                    "Kullanıcı Seçin", list(st.session_state.users.keys()), key="giris_kullanici_sec"
+                    "Kullanıcı Seçin", list(st.session_state.global_users.keys()), key="giris_kullanici_sec"
                 )
                 k_sifre = st.text_input("Şifre", type="password", key="giris_sifre_input")
                 beni_hatirla = st.checkbox("Beni Hatırla (Sayfa Yenilense De Açık Kal)", value=True)
@@ -327,8 +326,8 @@ if not st.session_state.authenticated:
 
                 if giris_buton:
                     if (
-                        secilen_kullanici in st.session_state.users
-                        and st.session_state.users[secilen_kullanici] == k_sifre
+                        secilen_kullanici in st.session_state.global_users
+                        and st.session_state.global_users[secilen_kullanici] == k_sifre
                     ):
                         st.session_state.authenticated = True
                         st.session_state.current_user = secilen_kullanici
@@ -339,7 +338,7 @@ if not st.session_state.authenticated:
                         if beni_hatirla:
                             st.query_params["auth_user"] = secilen_kullanici
 
-                        st.session_state.personel_loglari.insert(
+                        st.session_state.global_personel_loglari.insert(
                             0,
                             {
                                 "Kullanıcı": secilen_kullanici,
@@ -360,7 +359,7 @@ if not st.session_state.authenticated:
             st.markdown("### Şifre Sıfırlama")
             with st.form("sifre_sifirla_formu"):
                 s_kullanici = st.selectbox(
-                    "Kullanıcı Seçin", list(st.session_state.users.keys()), key="sifirla_kullanici"
+                    "Kullanıcı Seçin", list(st.session_state.global_users.keys()), key="sifirla_kullanici"
                 )
                 yeni_sifre_1 = st.text_input("Yeni Şifre", type="password", key="y_sifre1")
                 yeni_sifre_2 = st.text_input("Yeni Şifre (Tekrar)", type="password", key="y_sifre2")
@@ -369,14 +368,14 @@ if not st.session_state.authenticated:
 
                 if sifre_guncelle_buton:
                     if yeni_sifre_1 and yeni_sifre_1 == yeni_sifre_2:
-                        st.session_state.users[s_kullanici] = yeni_sifre_1
+                        st.session_state.global_users[s_kullanici] = yeni_sifre_1
                         st.session_state.authenticated = True
                         st.session_state.current_user = s_kullanici
                         st.session_state.is_admin = (s_kullanici.lower() == "admin")
                         st.session_state.sifre_unuttum_aktif = False
                         st.query_params["auth_user"] = s_kullanici
 
-                        st.session_state.personel_loglari.insert(
+                        st.session_state.global_personel_loglari.insert(
                             0,
                             {
                                 "Kullanıcı": s_kullanici,
@@ -490,7 +489,7 @@ if menu_secim == "🔒 Yönetici Paneli":
             pd.DataFrame(
                 [
                     {"Kullanıcı": k, "Yetki": "Admin" if k == "Admin" else "Personel"}
-                    for k in st.session_state.users
+                    for k in st.session_state.global_users
                 ]
             ),
             use_container_width=True,
@@ -503,14 +502,14 @@ if menu_secim == "🔒 Yönetici Paneli":
             p_Sif = st.text_input("Şifre", type="password")
             if st.form_submit_button("Personel Kaydet"):
                 if p_ad:
-                    st.session_state.users[p_ad] = p_Sif
+                    st.session_state.global_users[p_ad] = p_Sif
                     st.success(f"✅ {p_ad} başarıyla eklendi.")
                 else:
                     st.error("❌ Kullanıcı adı boş olamaz!")
     with t2:
-        if len(st.session_state.personel_loglari) > 0:
+        if len(st.session_state.global_personel_loglari) > 0:
             st.dataframe(
-                pd.DataFrame(st.session_state.personel_loglari),
+                pd.DataFrame(st.session_state.global_personel_loglari),
                 use_container_width=True,
                 hide_index=True,
             )
@@ -528,15 +527,17 @@ elif menu_secim == "🏠 Ana Sayfa":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="page-subtitle">İmalat ve stok performansının genel özeti.</div>',
+        '<div class="page-subtitle">Üretim, stok, finans ve atölye performansının genel özeti.</div>',
         unsafe_allow_html=True,
     )
 
-    df_stok = st.session_state.stok
+    df_stok = st.session_state.global_stok
     toplam_cesit = len(df_stok)
     toplam_adet = int(df_stok["Bakiye"].sum())
     maliyet_toplam = (df_stok["Alış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
-
+    satis_potansiyeli = (df_stok["Satış Fiyatı (TL)"] * df_stok["Bakiye"]).sum()
+    
+    toplam_ciro = sum([f["Toplam"] for f in st.session_state.global_faturalar]) if len(st.session_state.global_faturalar) > 0 else 0.0
     kritik_df = df_stok[df_stok["Bakiye"] <= df_stok["Kritik Sınır"]]
 
     c1, c2, c3, c4 = st.columns(4)
@@ -585,12 +586,66 @@ elif menu_secim == "🏠 Ana Sayfa":
             unsafe_allow_html=True,
         )
 
-    if len(kritik_df) > 0:
+    f1, f2, f3, f4 = st.columns(4)
+    with f1:
         st.markdown(
-            '<div class="section-title" style="color:#ef4444;">🚨 Kritik Eşikteki Ürünler</div>',
+            f"""
+        <div class="stat-card">
+            <div class="stat-icon">💵</div>
+            <div class="stat-title">Toplam Kesilen Ciro</div>
+            <div class="stat-value">₺{toplam_ciro:,.0f}</div>
+            <div class="stat-change">Faturalandırılan</div>
+        </div>""",
             unsafe_allow_html=True,
         )
-        st.dataframe(kritik_df, use_container_width=True, hide_index=True)
+    with f2:
+        st.markdown(
+            f"""
+        <div class="stat-card">
+            <div class="stat-icon">🏷️</div>
+            <div class="stat-title">Potansiyel Satış Değeri</div>
+            <div class="stat-value">₺{satis_potansiyeli:,.0f}</div>
+            <div class="stat-change">Depodaki Malın Satış Karşılığı</div>
+        </div>""",
+            unsafe_allow_html=True,
+        )
+    with f3:
+        st.markdown(
+            f"""
+        <div class="stat-card">
+            <div class="stat-icon">🧾</div>
+            <div class="stat-title">Kesilen Fatura Adedi</div>
+            <div class="stat-value">{len(st.session_state.global_faturalar)}</div>
+            <div class="stat-change">İşlem Sayısı</div>
+        </div>""",
+            unsafe_allow_html=True,
+        )
+    with f4:
+        st.markdown(
+            f"""
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-title">Kayıtlı Cari Sayısı</div>
+            <div class="stat-value">{len(st.session_state.global_cariler)}</div>
+            <div class="stat-change">Müşteri & Tedarikçi</div>
+        </div>""",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    tab_dash1, tab_dash2 = st.tabs(["🚨 Kritik Eşikteki Ürünler", "🕒 Son Depo / Atölye Hareketleri"])
+    with tab_dash1:
+        if len(kritik_df) > 0:
+            st.dataframe(kritik_df, use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Kritik eşiğin altında azalan ürün bulunmuyor. Stok durumları sağlıklı.")
+
+    with tab_dash2:
+        if len(st.session_state.global_stok_hareketleri) > 0:
+            st.dataframe(pd.DataFrame(st.session_state.global_stok_hareketleri).head(10), use_container_width=True, hide_index=True)
+        else:
+            st.info("Kayıtlı hareket bulunmuyor.")
 
 
 # =========================================================
@@ -611,7 +666,7 @@ elif menu_secim == "📦 Ürün Kataloğu & Stok":
         "🔎 Ürün Ara / Barkod Okut",
         placeholder="Ürün adı veya barkod giriniz...",
     )
-    df_s = st.session_state.stok.copy()
+    df_s = st.session_state.global_stok.copy()
     if arama:
         df_s = df_s[
             df_s["Ürün Adı"]
@@ -638,7 +693,7 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
 
     with st.form("imalat_form_gelismis"):
         sec_urun = st.selectbox(
-            "Üretilen Ürünü Seçin", st.session_state.stok["Ürün Adı"].tolist()
+            "Üretilen Ürünü Seçin", st.session_state.global_stok["Ürün Adı"].tolist()
         )
         islem_turu = st.selectbox(
             "İşlem Türü",
@@ -655,24 +710,24 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
         kaydet_imalat = st.form_submit_button("💾 Stok Güncellemesini Kaydet")
 
         if kaydet_imalat:
-            idx = st.session_state.stok[
-                st.session_state.stok["Ürün Adı"] == sec_urun
+            idx = st.session_state.global_stok[
+                st.session_state.global_stok["Ürün Adı"] == sec_urun
             ].index[0]
-            mevcut = int(st.session_state.stok.loc[idx, "Bakiye"])
+            mevcut = int(st.session_state.global_stok.loc[idx, "Bakiye"])
 
             if "Ekle" in islem_turu:
-                st.session_state.stok.loc[idx, "Bakiye"] = mevcut + adet
+                st.session_state.global_stok.loc[idx, "Bakiye"] = mevcut + adet
                 islem_tip_str = "İmalat Girişi (+)"
-                st.success(f"✅ İşlem Başarılı! {sec_urun} stoğa eklendi. Yeni Bakiye: {st.session_state.stok.loc[idx, 'Bakiye']}")
+                st.success(f"✅ İşlem Başarılı! {sec_urun} stoğa eklendi. Yeni Bakiye: {st.session_state.global_stok.loc[idx, 'Bakiye']}")
             else:
                 if adet > mevcut:
                     st.error(f"❌ Hata: Mevcut stoktan ({mevcut} adet) fazla düşüş yapılamaz!")
                     st.stop()
-                st.session_state.stok.loc[idx, "Bakiye"] = mevcut - adet
+                st.session_state.global_stok.loc[idx, "Bakiye"] = mevcut - adet
                 islem_tip_str = "İmalat/Fire Çıkışı (-)"
-                st.success(f"✅ İşlem Başarılı! {sec_urun} stoktan düşüldü. Kalan: {st.session_state.stok.loc[idx, 'Bakiye']}")
+                st.success(f"✅ İşlem Başarılı! {sec_urun} stoktan düşüldü. Kalan: {st.session_state.global_stok.loc[idx, 'Bakiye']}")
 
-            st.session_state.stok_hareketleri.insert(
+            st.session_state.global_stok_hareketleri.insert(
                 0,
                 {
                     "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -698,9 +753,9 @@ elif menu_secim == "📊 Stok Hareket Geçmişi":
         unsafe_allow_html=True,
     )
 
-    if len(st.session_state.stok_hareketleri) > 0:
+    if len(st.session_state.global_stok_hareketleri) > 0:
         st.dataframe(
-            pd.DataFrame(st.session_state.stok_hareketleri),
+            pd.DataFrame(st.session_state.global_stok_hareketleri),
             use_container_width=True,
             hide_index=True,
         )
@@ -738,7 +793,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
         st.markdown("---")
         s_urun = st.selectbox(
             "Satılacak Mobilya Ürünü *",
-            st.session_state.stok["Ürün Adı"].tolist(),
+            st.session_state.global_stok["Ürün Adı"].tolist(),
         )
         s_adet = st.number_input(
             "Satış Miktarı (Adet/Takım) *", min_value=1, step=1, value=1
@@ -750,12 +805,12 @@ elif menu_secim == "🧾 Satış Faturası Kes":
             if not m_ad:
                 st.error("❌ Hata: Müşteri adı boş olamaz!")
             else:
-                idx = st.session_state.stok[
-                    st.session_state.stok["Ürün Adı"] == s_urun
+                idx = st.session_state.global_stok[
+                    st.session_state.global_stok["Ürün Adı"] == s_urun
                 ].index[0]
-                mevcut_stk = int(st.session_state.stok.loc[idx, "Bakiye"])
+                mevcut_stk = int(st.session_state.global_stok.loc[idx, "Bakiye"])
                 satis_fiyat = float(
-                    st.session_state.stok.loc[idx, "Satış Fiyatı (TL)"]
+                    st.session_state.global_stok.loc[idx, "Satış Fiyatı (TL)"]
                 )
 
                 if s_adet > mevcut_stk:
@@ -763,13 +818,13 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                         f"❌ Yetersiz Stok! Depoda sadece {mevcut_stk} adet var."
                     )
                 else:
-                    st.session_state.stok.loc[idx, "Bakiye"] = mevcut_stk - s_adet
+                    st.session_state.global_stok.loc[idx, "Bakiye"] = mevcut_stk - s_adet
                     toplam_tutar = satis_fiyat * s_adet
                     kdv = toplam_tutar - (toplam_tutar / 1.20)
                     matrah = toplam_tutar - kdv
-                    f_no = f"HYL2026{len(st.session_state.faturalar)+1:04d}"
+                    f_no = f"HYL2026{len(st.session_state.global_faturalar)+1:04d}"
 
-                    st.session_state.faturalar.append({
+                    st.session_state.global_faturalar.append({
                         "Fatura No": f_no,
                         "Müşteri": m_ad,
                         "Ürün": s_urun,
@@ -777,7 +832,7 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                         "Toplam": toplam_tutar,
                     })
 
-                    st.session_state.stok_hareketleri.insert(
+                    st.session_state.global_stok_hareketleri.insert(
                         0,
                         {
                             "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -839,30 +894,30 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
             "İşlem Türü", ["Alış Faturası (Stok Artır)", "İade / Düşüm"]
         )
         urun_sec = st.selectbox(
-            "Ürün Seç", st.session_state.stok["Ürün Adı"].tolist()
+            "Ürün Seç", st.session_state.global_stok["Ürün Adı"].tolist()
         )
         mik = st.number_input("Adet", min_value=1, step=1)
         irsaliye_onay = st.form_submit_button("Faturayı Onayla ve İşle")
 
         if irsaliye_onay:
-            idx = st.session_state.stok[
-                st.session_state.stok["Ürün Adı"] == urun_sec
+            idx = st.session_state.global_stok[
+                st.session_state.global_stok["Ürün Adı"] == urun_sec
             ].index[0]
-            mevcut_bakiye = int(st.session_state.stok.loc[idx, "Bakiye"])
+            mevcut_bakiye = int(st.session_state.global_stok.loc[idx, "Bakiye"])
             
             if "Artır" in tur:
-                st.session_state.stok.loc[idx, "Bakiye"] = mevcut_bakiye + mik
+                st.session_state.global_stok.loc[idx, "Bakiye"] = mevcut_bakiye + mik
                 islem_turu_str = "Alış Faturası Girişi (+)"
                 st.success("✅ Stok başarıyla artırıldı ve onaylandı.")
             else:
                 if mik > mevcut_bakiye:
                     st.error("❌ Hata: Mevcut stoktan fazla düşüm yapılamaz!")
                     st.stop()
-                st.session_state.stok.loc[idx, "Bakiye"] = mevcut_bakiye - mik
+                st.session_state.global_stok.loc[idx, "Bakiye"] = mevcut_bakiye - mik
                 islem_turu_str = "İade / Düşüm (-)"
                 st.success("✅ Stoktan düşüm işlemi başarıyla onaylandı.")
 
-            st.session_state.stok_hareketleri.insert(
+            st.session_state.global_stok_hareketleri.insert(
                 0,
                 {
                     "Zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -888,7 +943,7 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
         unsafe_allow_html=True,
     )
     st.dataframe(
-        st.session_state.cariler, use_container_width=True, hide_index=True
+        st.session_state.global_cariler, use_container_width=True, hide_index=True
     )
 
     st.markdown("#### Yeni Cari Tanımla")
@@ -904,8 +959,8 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
                     "Tür": c_tur,
                     "Bakiye (TL)": 0.0,
                 }])
-                st.session_state.cariler = pd.concat(
-                    [st.session_state.cariler, yeni_c], ignore_index=True
+                st.session_state.global_cariler = pd.concat(
+                    [st.session_state.global_cariler, yeni_c], ignore_index=True
                 )
                 st.success("✅ Cari kart başarıyla kaydedildi.")
             else:
@@ -927,7 +982,7 @@ elif menu_secim == "🏦 Banka Hesapları":
     )
 
     st.dataframe(
-        st.session_state.banka_hesaplari,
+        st.session_state.global_banka_hesaplari,
         use_container_width=True,
         hide_index=True,
     )
@@ -961,8 +1016,8 @@ elif menu_secim == "🏦 Banka Hesapları":
                     "IBAN": b_iban.upper(),
                     "Döviz": b_doviz,
                 }])
-                st.session_state.banka_hesaplari = pd.concat(
-                    [st.session_state.banka_hesaplari, yeni_b],
+                st.session_state.global_banka_hesaplari = pd.concat(
+                    [st.session_state.global_banka_hesaplari, yeni_b],
                     ignore_index=True,
                 )
                 st.success(
@@ -1017,7 +1072,7 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("💾 Ürünü Kataloğa Kaydet", type="primary"):
         if u_ad and u_barkod:
-            if u_barkod in st.session_state.stok["Barkod"].astype(str).values:
+            if u_barkod in st.session_state.global_stok["Barkod"].astype(str).values:
                 st.error("❌ Hata: Bu barkod sistemde zaten kayıtlı! Lütfen yeni bir barkod üretin.")
             else:
                 yeni_satir = pd.DataFrame([{
@@ -1029,8 +1084,8 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                     "Kritik Sınır": int(u_kritik),
                     "Birim": u_birim,
                 }])
-                st.session_state.stok = pd.concat(
-                    [st.session_state.stok, yeni_satir], ignore_index=True
+                st.session_state.global_stok = pd.concat(
+                    [st.session_state.global_stok, yeni_satir], ignore_index=True
                 )
                 st.session_state.random_barkod_uret = "".join(
                     [str(random.randint(0, 9)) for _ in range(13)]
@@ -1066,7 +1121,7 @@ elif menu_secim == "📊 Raporlar & Analiz":
         "Stok bazlı kârlılık ve ciro analizleri bu alanda listelenmektedir."
     )
     st.bar_chart(
-        st.session_state.stok[["Ürün Adı", "Satış Fiyatı (TL)"]].set_index(
+        st.session_state.global_stok[["Ürün Adı", "Satış Fiyatı (TL)"]].set_index(
             "Ürün Adı"
         )
     )
@@ -1087,12 +1142,12 @@ elif menu_secim == "🔑 Şifre Değiştir":
         yeni2 = st.text_input("Yeni Şifre Tekrar", type="password")
         if st.form_submit_button("Şifreyi Güncelle"):
             if (
-                st.session_state.current_user in st.session_state.users
-                and st.session_state.users[st.session_state.current_user]
+                st.session_state.current_user in st.session_state.global_users
+                and st.session_state.global_users[st.session_state.current_user]
                 == eski
             ):
                 if yeni1 and yeni1 == yeni2:
-                    st.session_state.users[
+                    st.session_state.global_users[
                         st.session_state.current_user
                     ] = yeni1
                     st.success("✅ Şifreniz başarıyla değiştirildi.")
