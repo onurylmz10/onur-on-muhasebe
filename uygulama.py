@@ -171,6 +171,16 @@ textarea {
     border-radius: 9px !important;
 }
 
+/* Fatura Şablonu Tasarımı */
+.invoice-box {
+    background: #ffffff;
+    color: #111111;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    margin-top: 20px;
+}
+
 /* Footer */
 .footer {
     border-top: 1px solid #202630;
@@ -232,6 +242,9 @@ if "stok" not in st.session_state:
         },
     ])
 
+if "faturalar" not in st.session_state:
+    st.session_state.faturalar = []
+
 
 # =========================================================
 # SIDEBAR
@@ -255,10 +268,10 @@ with st.sidebar:
         [
             "🏠 Dashboard",
             "📦 Ürünler",
+            "🧾 Satış Faturası Kes",
             "📄 Fatura ile Stok İşle",
             "📥 Stok Giriş",
             "📤 Stok Çıkış",
-            "🧾 Faturalar",
             "👥 Cari Hesaplar",
             "💰 Kasa",
             "🏦 Banka",
@@ -420,7 +433,137 @@ elif menu_secim == "📦 Ürünler":
 
 
 # =========================================================
-# FATURA İLE STOK İŞLE (YENİ ÖZELLİK)
+# SATIŞ FATURASI KES (YENİ ÖZELLİK)
+# =========================================================
+
+elif menu_secim == "🧾 Satış Faturası Kes":
+    st.markdown(
+        '<div class="page-title">🧾 Satış Faturası Kes</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="page-subtitle">Müşteriniz için resmi e-fatura oluşturun ve stoktan otomatik düşün.</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.form("satis_fatura_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            musteri_adi = st.text_input(
+                "Müşteri / Cari Adı Soyadı *", placeholder="Örn: Ahmet Yılmaz"
+            )
+            musteri_vergi = st.text_input(
+                "TCKN / Vergi No", placeholder="11 haneli TCKN veya VKN"
+            )
+        with c2:
+            fatura_tarihi = st.date_input(
+                "Fatura Tarihi", value=datetime.today()
+            )
+            odeme_tipi = st.selectbox(
+                "Ödeme Türü", ["Nakit", "Kredi Kartı", "Banka Havalesi / EFT"]
+            )
+
+        st.markdown("---")
+        secilen_urun_fatura = st.selectbox(
+            "Satılacak Ürün *", df["Ürün Adı"].tolist()
+        )
+        satis_adedi = st.number_input(
+            "Satış Miktarı (Adet/Takım) *", min_value=1, step=1, value=1
+        )
+
+        fatura_kes_btn = st.form_submit_button(
+            "🚀 Faturayı Kes ve Stoğu Güncelle"
+        )
+
+        if fatura_kes_btn:
+            if musteri_adi and secilen_urun_fatura:
+                # Stok kontrolü ve düşümü
+                idx = st.session_state.stok[
+                    st.session_state.stok["Ürün Adı"] == secilen_urun_fatura
+                ].index
+                mevcut_bakiye = int(
+                    st.session_state.stok.loc[idx, "Bakiye"].iloc[0]
+                )
+                Birim_fiyat = float(
+                    st.session_state.stok.loc[idx, "Satış Fiyatı (TL)"].iloc[0]
+                )
+
+                if satis_adedi > mevcut_bakiye:
+                    st.error(
+                        f"❌ Yetersiz Stok! Mevcut stok ({mevcut_bakiye}), talep edilen miktardan ({satis_adedi}) az."
+                    )
+                else:
+                    # Stoktan düş
+                    st.session_state.stok.loc[idx, "Bakiye"] -= satis_adedi
+
+                    # Tutar hesapla (KDV %20 dahil varsayalım)
+                    toplam_tutar = Birim_fiyat * satis_adedi
+                    kdv_tutar = toplam_tutar - (toplam_tutar / 1.20)
+                    matrah = toplam_tutar - kdv_tutar
+
+                    fatura_no = f"HYL2026{len(st.session_state.faturalar)+1:04d}"
+
+                    # Faturayı hafızaya kaydet
+                    yeni_fatura = {
+                        "Fatura No": fatura_no,
+                        "Tarih": str(fatura_tarihi),
+                        "Müşteri": musteri_adi,
+                        "Ürün": secilen_urun_fatura,
+                        "Miktar": satis_adedi,
+                        "Toplam Tutar (TL)": toplam_tutar,
+                    }
+                    st.session_state.faturalar.append(yeni_fatura)
+
+                    st.success(
+                        f"🎉 Fatura başarıyla kesildi! Fatura No: **{fatura_no}**"
+                    )
+
+                    # E-Fatura Şablonu Görseli
+                    st.markdown(
+                        f"""
+                    <div class="invoice-box">
+                        <h2 style="margin:0; color:#111;">HAYAL MOBİLYA SAN. TİC. LTD. ŞTİ.</h2>
+                        <p style="color:#555; font-size:12px; margin-top:2px;">Balıkesir / Edremit V.D. • VKN: 1234567890</p>
+                        <hr style="border:1px solid #ddd;">
+                        <table style="width:100%; font-size:13px; margin-bottom:15px;">
+                            <tr>
+                                <td><b>Fatura No:</b> {fatura_no}</td>
+                                <td><b>Tarih:</b> {fatura_tarihi}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Müşteri:</b> {musteri_adi}</td>
+                                <td><b>Ödeme Şekli:</b> {odeme_tipi}</td>
+                            </tr>
+                        </table>
+                        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+                            <tr style="background:#f2f2f2; border-bottom:1px solid #ddd;">
+                                <th style="padding:8px;">Ürün / Açıklama</th>
+                                <th style="padding:8px;">Miktar</th>
+                                <th style="padding:8px;">Birim Fiyat</th>
+                                <th style="padding:8px;">Toplam</th>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; border-bottom:1px solid #eee;">{secilen_urun_fatura}</td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;">{satis_adedi}</td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;">₺{Birim_fiyat:,.2f}</td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;">₺{toplam_tutar:,.2f}</td>
+                            </tr>
+                        </table>
+                        <div style="text-align:right; margin-top:15px; font-size:14px;">
+                            <p style="margin:2px;">Matrah: ₺{matrah:,.2f}</p>
+                            <p style="margin:2px;">KDV (%20): ₺{kdv_tutar:,.2f}</p>
+                            <h3 style="margin:5px 0; color:#000;">Genel Toplam: ₺{toplam_tutar:,.2f}</h3>
+                        </div>
+                    </div>
+                    """,
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.warning("Lütfen müşteri adını ve ürünü eksiksiz doldurun.")
+
+
+# =========================================================
+# FATURA İLE STOK İŞLE
 # =========================================================
 
 elif menu_secim == "📄 Fatura ile Stok İşle":
@@ -539,18 +682,20 @@ elif menu_secim == "📤 Stok Çıkış":
     )
     st.info("Stok çıkış modülü aktif.")
 
-elif menu_secim == "🧾 Faturalar":
-    st.markdown(
-        '<div class="page-title">🧾 Faturalar</div>', unsafe_allow_html=True
-    )
-    st.info("Faturalar listesi aktif.")
-
 elif menu_secim == "👥 Cari Hesaplar":
     st.markdown(
         '<div class="page-title">👥 Cari Hesaplar</div>',
         unsafe_allow_html=True,
     )
-    st.info("Cari hesaplar aktif.")
+    if len(st.session_state.faturalar) > 0:
+        st.write("Kesilen Faturalar / Hareketler:")
+        st.dataframe(
+            pd.DataFrame(st.session_state.faturalar),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.info("Henüz kesilmiş bir fatura bulunmuyor.")
 
 elif menu_secim == "💰 Kasa":
     st.markdown(
@@ -561,7 +706,7 @@ elif menu_secim == "💰 Kasa":
 elif menu_secim == "🏦 Banka":
     st.markdown(
         '<div class="page-title">🏦 Banka Hesapları</div>',
-        unsafe_allow_html=True,
+        unsafe_allow_html=T
     )
     st.info("Banka hesapları aktif.")
 
@@ -597,7 +742,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.1.0
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.2.0
 </div>
 """,
     unsafe_allow_html=True,
