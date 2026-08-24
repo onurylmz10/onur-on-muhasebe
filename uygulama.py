@@ -222,6 +222,7 @@ if "stok_hareketleri" not in st.session_state:
         }
     ]
 
+# Stok Verisinin Kalıcı Hafızada Tutulması (Sayfa yenilense dahi uçmaz)
 if "stok" not in st.session_state:
     st.session_state.stok = pd.DataFrame([
         {
@@ -663,7 +664,6 @@ elif menu_secim == "🛠️ Hızlı İmalat / Stok Güncelle":
                 st.session_state.stok.loc[idx, "Bakiye"] = mevcut + adet
                 islem_tip_str = "İmalat Girişi (+)"
                 st.success(f"✅ İşlem Başarılı! {sec_urun} stoğa eklendi. Yeni Bakiye: {st.session_state.stok.loc[idx, 'Bakiye']}")
-                st.balloons()
             else:
                 if adet > mevcut:
                     st.error(f"❌ Hata: Mevcut stoktan ({mevcut} adet) fazla düşüş yapılamaz!")
@@ -789,7 +789,6 @@ elif menu_secim == "🧾 Satış Faturası Kes":
                     )
 
                     st.success(f"✅ Fatura başarıyla oluşturuldu ve onaylandı. No: {f_no}")
-                    st.balloons()
                     st.markdown(
                         f"""
                     <div class="invoice-box">
@@ -855,7 +854,6 @@ elif menu_secim == "📄 Fatura / İrsaliye İşle":
                 st.session_state.stok.loc[idx, "Bakiye"] = mevcut_bakiye + mik
                 islem_turu_str = "Alış Faturası Girişi (+)"
                 st.success("✅ Stok başarıyla artırıldı ve onaylandı.")
-                st.balloons()
             else:
                 if mik > mevcut_bakiye:
                     st.error("❌ Hata: Mevcut stoktan fazla düşüm yapılamaz!")
@@ -910,7 +908,6 @@ elif menu_secim == "👥 Cari Hesaplar & Borçlar":
                     [st.session_state.cariler, yeni_c], ignore_index=True
                 )
                 st.success("✅ Cari kart başarıyla kaydedildi.")
-                st.balloons()
             else:
                 st.error("❌ Hata: Cari / Firma adı boş bırakılamaz!")
 
@@ -971,7 +968,6 @@ elif menu_secim == "🏦 Banka Hesapları":
                 st.success(
                     "✅ Banka hesabı ve IBAN bilgisi başarıyla sisteme kaydedildi."
                 )
-                st.balloons()
             else:
                 st.error("❌ Hata: Lütfen Banka Adı ve IBAN alanlarını doldurun.")
 
@@ -1040,7 +1036,6 @@ elif menu_secim == "➕ Yeni Ürün Kartı Aç":
                     [str(random.randint(0, 9)) for _ in range(13)]
                 )
                 st.success(f"✅ Başarılı! '{u_ad}' ürün kartı kataloğa eklendi.")
-                st.balloons()
         else:
             st.error("❌ Hata: Lütfen zorunlu alanları (Ürün Adı ve Barkod) doldurun.")
 
@@ -1101,7 +1096,6 @@ elif menu_secim == "🔑 Şifre Değiştir":
                         st.session_state.current_user
                     ] = yeni1
                     st.success("✅ Şifreniz başarıyla değiştirildi.")
-                    st.balloons()
                 else:
                     st.error("❌ Hata: Yeni şifreler birbiriyle uyuşmuyor!")
             else:
