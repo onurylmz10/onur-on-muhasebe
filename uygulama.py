@@ -602,19 +602,13 @@ elif menu_secim == "🏠 Ana Sayfa":
             unsafe_allow_html=True,
         )
 
-    # KRİTİK STOK UYARI PANELI (Ana Sayfa Üzerinde Dikkat Çekici Uyarı)
+    # KRİTİK STOK UYARI PANELI
     if len(kritik_stok) > 0:
         st.markdown(
             '<div class="section-title" style="color:#ff4b4b;">⚠️ Acil Müdahale Gerektiren Kritik Stoklar (3 ve Altı)</div>',
             unsafe_allow_html=True,
         )
-        st.dataframe(
-            kritik_stok.style.background_gradient(
-                subset=["Bakiye"], cmap="Reds"
-            ),
-            use_container_width=True,
-            hide_index=True,
-        )
+        st.dataframe(kritik_stok, use_container_width=True, hide_index=True)
 
     st.markdown(
         '<div class="section-title">📈 Stok Dağılımı</div>',
@@ -625,7 +619,7 @@ elif menu_secim == "🏠 Ana Sayfa":
 
 
 # =========================================================
-# ÜRÜNLER (KRİTİK STOKLARI KIRMIZI VURGULAMA)
+# ÜRÜNLER (GÜVENLİ STOK VURGULAMA)
 # =========================================================
 
 elif menu_secim == "📦 Ürünler":
@@ -634,7 +628,7 @@ elif menu_secim == "📦 Ürünler":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="page-subtitle">3 ve daha az kalan kritik stok seviyesindeki ürünler tabloda kırmızı ile vurgulanmaktadır.</div>',
+        '<div class="page-subtitle">3 ve daha az kalan kritik stok seviyesindeki ürünler aşağıda listelenmiştir.</div>',
         unsafe_allow_html=True,
     )
 
@@ -651,25 +645,32 @@ elif menu_secim == "📦 Ürünler":
             .str.contains(arama, case=False, na=False)
         ]
 
+    # Kritik stokları özel renkli HTML kutusuyla dikkat çekici gösterme
+    st.markdown("### 📋 Tüm Ürün Listesi")
+    st.dataframe(filtre_df, use_container_width=True, hide_index=True)
 
-    # Kritik stokları (bakiye <= 3) arka planını kırmızı yaparak vurgulayan stil fonksiyonu
-    def kritik_stok_renklendir(val):
-        color = (
-            "background-color: #ffe6e6; color: #cc0000; font-weight: bold;"
-            if isinstance(val, (int, float)) and val <= 3
-            else ""
+    # Kritik stok uyarı kartları
+    kritik_list = filtre_df[filtre_df["Bakiye"] <= 3]
+    if len(kritik_list) > 0:
+        st.markdown(
+            '<div class="section-title" style="color:#ff4b4b;">🚨 Dikkat Edilmesi Gereken Kritik Stoklar</div>',
+            unsafe_allow_html=True,
         )
-        return color
-
-
-    styled_df = filtre_df.style.map(
-        kritik_stok_renklendir, subset=["Bakiye"]
-    ).format({
-        "Alış Fiyatı (TL)": "₺{:,.2f}",
-        "Satış Fiyatı (TL)": "₺{:,.2f}",
-    })
-
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+        for _, row in kritik_list.iterrows():
+            st.markdown(
+                f"""
+            <div style="background: #1e1114; border: 1px solid #ff4b4b; padding: 12px 18px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="font-weight: 700; color: #ff8080; font-size: 15px;">📦 {row['Ürün Adı']}</span><br>
+                    <span style="color: #99aab5; font-size: 12px;">Barkod: {row['Barkod']} • Birim: {row['Birim']}</span>
+                </div>
+                <div style="background: #ff4b4b; color: white; padding: 6px 14px; border-radius: 8px; font-weight: 800; font-size: 14px;">
+                    Kalan: {row['Bakiye']} {row['Birim']}
+                </div>
+            </div>
+            """,
+                unsafe_allow_html=True,
+            )
 
 
 # =========================================================
@@ -1019,7 +1020,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.6.4
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.6.5
 </div>
 """,
     unsafe_allow_html=True,
