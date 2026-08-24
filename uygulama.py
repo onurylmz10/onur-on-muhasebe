@@ -45,7 +45,6 @@ st.markdown(
 )
 
 # =========================================================
-# =========================================================
 # 2. ORTAK VE KALICI VERİTABANI (SQLite)
 # =========================================================
 # ÖNEMLİ:
@@ -55,43 +54,22 @@ DB_PATH = "hayal_mobilya.db"
 
 def _db():
     conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
-
-# =========================================================
-# MALZEME STOĞU - ÜRÜN STOĞUNDAN AYRI
-# =========================================================
-conn.execute("""
-CREATE TABLE IF NOT EXISTS malzemeler (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    malzeme_adi TEXT NOT NULL UNIQUE,
-    birim TEXT NOT NULL DEFAULT 'Adet',
-    miktar REAL NOT NULL DEFAULT 0,
-    kritik_sinir REAL NOT NULL DEFAULT 0,
-    alis_fiyati REAL NOT NULL DEFAULT 0,
-    renk TEXT DEFAULT '',
-    tedarikci TEXT DEFAULT ''
-)
-""")
-conn.commit()
-
-def malzeme_df():
-    return pd.read_sql_query("""
-        SELECT
-            id AS ID,
-            malzeme_adi AS "Malzeme Adı",
-            birim AS "Birim",
-            miktar AS "Miktar",
-            kritik_sinir AS "Kritik Sınır",
-            alis_fiyati AS "Alış Fiyatı (TL)",
-            renk AS "Renk",
-            tedarikci AS "Tedarikçi"
-        FROM malzemeler
-        ORDER BY id DESC
-    """, conn)
-
     conn.execute("""
         CREATE TABLE IF NOT EXISTS app_data (
             data_key TEXT PRIMARY KEY,
             data_value TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS malzemeler (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            malzeme_adi TEXT NOT NULL UNIQUE,
+            birim TEXT NOT NULL DEFAULT 'Adet',
+            miktar REAL NOT NULL DEFAULT 0,
+            kritik_sinir REAL NOT NULL DEFAULT 0,
+            alis_fiyati REAL NOT NULL DEFAULT 0,
+            renk TEXT DEFAULT '',
+            tedarikci TEXT DEFAULT ''
         )
     """)
     conn.commit()
@@ -100,15 +78,19 @@ def malzeme_df():
 def _db_get(key, default):
     conn = _db()
     row = conn.execute("SELECT data_value FROM app_data WHERE data_key = ?", (key,)).fetchone()
-    conn.close()
     if row is None:
+        conn.close()
         _db_set(key, default)
         return default
     try:
-        return json.loads(row[0])
+        value = json.loads(row[0])
     except Exception:
+        value = default
+        conn.close()
         _db_set(key, default)
-        return default
+        return value
+    conn.close()
+    return value
 
 def _db_set(key, value):
     conn = _db()
@@ -126,8 +108,27 @@ def _records_to_df(records, columns):
     df = pd.DataFrame(records)
     for col in columns:
         if col not in df.columns:
-            df[col] = []
+            df[col] = None
     return df[columns]
+
+def malzeme_df():
+    conn = _db()
+    try:
+        return pd.read_sql_query("""
+            SELECT
+                id AS ID,
+                malzeme_adi AS "Malzeme Adı",
+                birim AS "Birim",
+                miktar AS "Miktar",
+                kritik_sinir AS "Kritik Sınır",
+                alis_fiyati AS "Alış Fiyatı (TL)",
+                renk AS "Renk",
+                tedarikci AS "Tedarikçi"
+            FROM malzemeler
+            ORDER BY id DESC
+        """, conn)
+    finally:
+        conn.close()
 
 STOK_COLUMNS = [
     "Ürün Adı", "Barkod", "Alış Fiyatı (TL)", "Satış Fiyatı (TL)",
@@ -498,15 +499,19 @@ elif menu_secim == "🧱 Malzeme Stoğu":
                 st.error("❌ Malzeme adı boş bırakılamaz.")
             else:
                 try:
-                    conn.execute("""
-                        INSERT INTO malzemeler
-                        (malzeme_adi, birim, miktar, kritik_sinir, alis_fiyati, renk, tedarikci)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        malzeme_adi.strip(), malzeme_birim, malzeme_miktar,
-                        malzeme_kritik, malzeme_alis, malzeme_renk, malzeme_tedarikci
-                    ))
-                    conn.commit()
+                    db = _db()
+                    try:
+                        db.execute("""
+                            INSERT INTO malzemeler
+                            (malzeme_adi, birim, miktar, kritik_sinir, alis_fiyati, renk, tedarikci)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            malzeme_adi.strip(), malzeme_birim, malzeme_miktar,
+                            malzeme_kritik, malzeme_alis, malzeme_renk, malzeme_tedarikci
+                        ))
+                        db.commit()
+                    finally:
+                        db.close()
                     st.success(f"✅ {malzeme_adi} ortak malzeme stoğuna eklendi.")
                     st.rerun()
                 except sqlite3.IntegrityError:
@@ -527,7 +532,8 @@ elif menu_secim == "🧱 Malzeme Stoğu":
             key="malzeme_degisim"
         )
         if st.button("Malzeme Stoğunu Güncelle", use_container_width=True):
-            mevcut = conn.execute(
+            db = _db()
+            mevcut = db.execute(
                 "SELECT miktar FROM malzemeler WHERE malzeme_adi = ?",
                 (secilen_malzeme,)
             ).fetchone()
@@ -535,15 +541,20 @@ elif menu_secim == "🧱 Malzeme Stoğu":
             if mevcut:
                 yeni_miktar = float(mevcut[0]) + degisim
                 if yeni_miktar < 0:
+                    db.close()
                     st.error("❌ Malzeme stoğu 0'ın altına düşemez.")
                 else:
-                    conn.execute(
+                    db.execute(
                         "UPDATE malzemeler SET miktar = ? WHERE malzeme_adi = ?",
                         (yeni_miktar, secilen_malzeme)
                     )
-                    conn.commit()
+                    db.commit()
+                    db.close()
                     st.success(f"✅ {secilen_malzeme} stoğu güncellendi.")
                     st.rerun()
+            else:
+                db.close()
+                st.error("❌ Malzeme bulunamadı.")
 
 
 elif menu_secim == "📦 Ürün Stoğu":
