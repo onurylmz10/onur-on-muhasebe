@@ -469,7 +469,6 @@ if menu_secim == "🔒 Yönetici Paneli":
             "💡 İşten ayrılan personellerin sistem güvenliği için hesaplarını buradan silebilirsiniz."
         )
 
-        # Tablo görünümü
         p_data = []
         for k, s in st.session_state.users.items():
             p_data.append({
@@ -484,27 +483,33 @@ if menu_secim == "🔒 Yönetici Paneli":
             unsafe_allow_html=True,
         )
 
-        silinecek_kullanici = st.selectbox(
-            "Silinecek Personeli Seçin",
-            [k for k in st.session_state.users.keys() if k != "admin"],
-        )
+        silinebilir_kullanicilar = [
+            k for k in st.session_state.users.keys() if k != "admin"
+        ]
 
-        if st.button("⚠️ Seçilen Personel Hesabını Kalıcı Olarak Sil"):
-            if silinecek_kullanici in st.session_state.users:
-                del st.session_state.users[silinecek_kullanici]
-                st.success(
-                    f"✅ **{silinecek_kullanici}** adlı personel hesabı sistemden başarıyla silindi. Artık giriş yapamayacak."
-                )
-                st.rerun()
-            else:
-                st.error("❌ Personel bulunamadı.")
+        if len(silinebilir_kullanicilar) > 0:
+            silinecek_kullanici = st.selectbox(
+                "Silinecek Personeli Seçin", silinebilir_kullanicilar
+            )
+
+            if st.button("⚠️ Seçilen Personel Hesabını Kalıcı Olarak Sil"):
+                if silinecek_kullanici in st.session_state.users:
+                    del st.session_state.users[silinecek_kullanici]
+                    st.success(
+                        f"✅ **{silinecek_kullanici}** adlı personel hesabı sistemden başarıyla silindi."
+                    )
+                    st.rerun()
+        else:
+            st.info(
+                "Sistemde silinebilecek başka personel hesabı bulunmuyor (Admin silinemez)."
+            )
 
     with tab_personel_ekle:
         st.markdown(
             '<div class="section-title">Yeni Personel Hesabı Oluştur</div>',
             unsafe_allow_html=True,
         )
-        with st.form("admin_yeni_personel_form"):
+        with st.form("admin_yeni_personel_form", clear_on_submit=True):
             yeni_p_kullanici = st.text_input(
                 "Personel Kullanıcı Adı (Giriş için)"
             )
@@ -528,6 +533,7 @@ if menu_secim == "🔒 Yönetici Paneli":
                     st.success(
                         f"🎉 **{yeni_p_kullanici}** kullanıcı adı ile personel hesabı başarıyla oluşturuldu!"
                     )
+                    st.rerun()  # Sayfayı yenileyerek listeye hemen eklenmesini sağlar
 
     with tab_loglar:
         st.markdown(
@@ -942,7 +948,7 @@ elif menu_secim == "⚙️ Ayarlar":
 st.markdown(
     """
 <div class="footer">
-    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.5.1
+    © 2026 Hayal Mobilya • Ön Muhasebe ve Stok Takip Sistemi • v2.5.2
 </div>
 """,
     unsafe_allow_html=True,
